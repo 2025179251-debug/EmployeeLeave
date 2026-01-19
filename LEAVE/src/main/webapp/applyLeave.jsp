@@ -82,8 +82,8 @@ body {
 }
 
 h2.title {
-	font-size: 28px;
-	font-weight: 900;
+	font-size: 26px;
+	font-weight: 800;
 	margin: 0;
 	text-transform: uppercase;
 	color: #000;
@@ -480,7 +480,7 @@ to {
 			<h3
 				class="text-xl font-black uppercase tracking-tight text-slate-900">Success!</h3>
 			<p
-				class="text-slate-500 text-sm mt-3 mb-10 leading-relaxed font-medium uppercase">Your
+				class="text-slate-700 text-sm mt-3 mb-10 leading-relaxed font-medium">Your
 				leave application has been submitted and is pending review by your
 				manager.</p>
 			<button class="btn-submit" onclick="location.href='LeaveHistory'">Go
