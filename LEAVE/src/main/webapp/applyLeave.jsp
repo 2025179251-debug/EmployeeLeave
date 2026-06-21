@@ -132,11 +132,12 @@ label {
 	letter-spacing: 0.05em;
 }
 
-input, select, textarea {
+/* ✅ FIXED SELECTOR: Specifically bypasses input type="file" elements to allow standard Tailwind hidden constraints */
+input:not([type="file"]), select, textarea {
 	width: 100% !important;
 	height: 54px !important;
-	padding: 0 20px !important;
-	border: 1px solid #cbd5e1 !important;
+	padding: 0 5px !important;
+	border: 2px solid #cbd5e1 !important;
 	border-radius: 14px !important;
 	font-size: 14px !important;
 	font-weight: 600 !important;
@@ -160,6 +161,12 @@ input:focus, select:focus, textarea:focus {
 
 input[type="date"] {
 	text-transform: none;
+}
+
+/* ERROR VISUAL CLUES FOR FORMS */
+input.invalid-field, select.invalid-field, textarea.invalid-field, #uploadZone.invalid-field {
+	border-color: #ef4444 !important;
+	background-color: #fff1f2 !important;
 }
 
 .duration-options {
@@ -203,7 +210,6 @@ input[type="date"] {
 }
 
 .dynamic-attributes {
-	grid-column: span 2;
 	background: #f8fafc;
 	border: 1px solid #e2e8f0;
 	padding: 32px;
@@ -290,18 +296,11 @@ input[type="date"] {
 	animation: slideUp 0.3s ease;
 }
 
-@
-keyframes slideUp {
-	from {opacity: 0;
-	transform: translateY(20px);
+@keyframes slideUp {
+	from {opacity: 0; transform: translateY(20px);}
+	to {opacity: 1; transform: translateY(0);}
 }
 
-to {
-	opacity: 1;
-	transform: translateY(0);
-}
-
-}
 .btn-modal-cancel {
 	background: #f1f5f9;
 	color: #64748b;
@@ -330,7 +329,7 @@ to {
 			<div class="flex justify-between items-end mb-4">
 				<div>
 					<h2 class="title">Apply Leave</h2>
-					<span class="sub-label">Submit your leave request for administrative approval</span>
+					<span class="sub-label">Submit your leave request for manager approval</span>
 				</div>
 			</div>
 
@@ -344,6 +343,7 @@ to {
 					enctype="multipart/form-data" id="applyForm"
 					onsubmit="return handleApplyForm(event)">
 
+					<!-- FIRST ROW: Type of Leave & Leave Period -->
 					<div class="form-grid">
 						<div>
 							<label>Type of Leave <span class="req-star">*</span></label> <select
@@ -395,18 +395,9 @@ to {
 								</label>
 							</div>
 						</div>
-
-						<div id="dynamicAttributes" class="dynamic-attributes">
-							<div class="flex items-center gap-3 mb-6">
-								<div class="w-1.5 h-5 bg-blue-600 rounded-full"></div>
-								<span
-									class="text-[11px] font-black text-blue-600 uppercase tracking-widest">Additional
-									Details Required</span>
-							</div>
-							<div id="dynamicFields" class="dynamic-grid"></div>
-						</div>
 					</div>
 
+					<!-- SECOND ROW: Start Date & End Date -->
 					<div class="form-grid">
 						<div>
 							<label>Start Date <span class="req-star">*</span></label> <input
@@ -420,21 +411,50 @@ to {
 						</div>
 					</div>
 
+					<!-- THIRD ROW: Stand-alone full-width Dynamic Attributes required section -->
+					<div id="dynamicAttributes" class="dynamic-attributes">
+						<div class="flex items-center gap-3 mb-6">
+							<div class="w-1.5 h-5 bg-blue-600 rounded-full"></div>
+							<span
+								class="text-[11px] font-black text-blue-600 uppercase tracking-widest">Additional
+								Details Required</span>
+						</div>
+						<div id="dynamicFields" class="dynamic-grid"></div>
+					</div>
+
 					<div class="mb-8">
 						<label>Reason for Leave <span class="req-star">*</span></label>
 						<textarea name="reason" id="reason" required
-							placeholder="EXPLAIN WHY YOU ARE TAKING THIS LEAVE..."></textarea>
+							placeholder="EXPLAIN WHY YOU ARE TAKING THIS LEAVE"></textarea>
 					</div>
 
+					<!-- FOURTH ROW: Center Aligned Drop-and-Click File Uploader Zone -->
 					<div class="mb-10">
 						<label>Supportive Attachment <span id="docRequired"
-							style="display: none;" class="req-star">(REQUIRED *)</span></label> <input
-							type="file" name="attachment" id="attachment"
-							accept=".pdf,.png,.jpg,.jpeg"
-							class="bg-slate-50 border-dashed border-2 border-slate-200 p-10 cursor-pointer text-center w-full rounded-2xl hover:bg-slate-100 transition-all text-xs font-bold text-slate-400" />
+							style="display: none;" class="req-star">(REQUIRED *)</span></label> 
+						
+						<!-- Styled card container triggering hidden standard input picker -->
+						<div onclick="document.getElementById('attachment').click();" 
+						     id="uploadZone"
+						     class="flex flex-col items-center justify-center border-dashed border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-blue-400 transition-all duration-200 rounded-2xl p-8 cursor-pointer text-center w-full min-h-[120px]">
+							
+							<div class="flex flex-col items-center gap-2">
+								<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+								</svg>
+								<span id="fileNameLabel" class="text-xs font-black text-slate-500 uppercase tracking-wide">CHOOSE FILE OR DRAG HERE</span>
+								<span id="fileSizeLabel" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">MAX FILE SIZE: 5MB</span>
+							</div>
+							
+							<!-- ✅ Bulletproof hidden input with style override to guarantee it never renders on any browser -->
+							<input type="file" name="attachment" id="attachment"
+								accept=".pdf,.png,.jpg,.jpeg"
+								onchange="handleFileChange(this); validateForm();"
+								style="display: none !important;" />
+						</div>
 						<p
 							class="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-tight text-center">Upload
-							MC or verification letter. Max 5MB.</p>
+							MC or verification letter.</p>
 					</div>
 
 					<button type="submit" id="submitBtn" class="btn-submit">
@@ -524,6 +544,7 @@ to {
         document.getElementById('confirmOverlay').classList.remove('show');
     }
 
+    // Secure form submission
     function submitFinalForm() {
         document.getElementById('applyForm').submit();
     }
@@ -539,9 +560,22 @@ to {
       }
     }
 
+    // Handles synchronization boundaries of leave dates and hospitalization sub-attributes
     function syncDates() {
         if (startEl.value) {
           endEl.setAttribute('min', startEl.value);
+          
+          // Dynamic Sync: Keep Hospital Admission Date always equal to Start Date
+          const admEl = document.querySelector('input[name="admissionDate"]');
+          if (admEl) {
+              admEl.value = startEl.value;
+          }
+          
+          // Dynamic Sync: Enforce Hospital Discharge Date minimum restriction
+          const disEl = document.querySelector('input[name="dischargeDate"]');
+          if (disEl) {
+              disEl.setAttribute('min', startEl.value);
+          }
         }
 
         const durationInput = document.querySelector('input[name="duration"]:checked');
@@ -574,11 +608,37 @@ to {
         return count;
     }
 
+    // Displays dynamic filename inside uploadZone when user uploads attachment
+    function handleFileChange(input) {
+        const nameLabel = document.getElementById('fileNameLabel');
+        const sizeLabel = document.getElementById('fileSizeLabel');
+        const uploadZone = document.getElementById('uploadZone');
+
+        if (input.files && input.files.length > 0) {
+            const uploadedFile = input.files[0];
+            nameLabel.textContent = uploadedFile.name.toUpperCase();
+            
+            const sizeInMB = (uploadedFile.size / (1024 * 1024)).toFixed(2);
+            sizeLabel.textContent = "FILE SIZE: " + sizeInMB + " MB";
+
+            if (uploadedFile.size > 5 * 1024 * 1024) {
+                uploadZone.classList.add('invalid-field');
+            } else {
+                uploadZone.classList.remove('invalid-field');
+            }
+        } else {
+            nameLabel.textContent = "CHOOSE FILE OR DRAG HERE";
+            sizeLabel.textContent = "MAX FILE SIZE: 5MB";
+            uploadZone.classList.remove('invalid-field');
+        }
+    }
+
     function validateForm() {
         const startVal = startEl.value;
         const endVal = endEl.value;
         const typeId = typeEl.value;
         const duration = document.querySelector('input[name="duration"]:checked').value;
+        const uploadZone = document.getElementById('uploadZone');
 
         let hasError = false;
         let msg = "";
@@ -596,23 +656,66 @@ to {
             const d2 = new Date(endVal);
             if (d2 < d1) {
                 hasError = true;
-                msg = "Conclusion date cannot be earlier than commencement date.";
+                msg = "End date cannot be earlier than start date.";
+            }
+        }
+
+        // Validate Hospitalization Discharge date relative to Admission Date (Start Date)
+        const disEl = document.querySelector('input[name="dischargeDate"]');
+        if (!hasError && disEl && disEl.value && startVal) {
+            if (disEl.value < startVal) {
+                hasError = true;
+                msg = "Hospital discharge date cannot be earlier than the admission date.";
+                disEl.classList.add('invalid-field');
+            } else {
+                disEl.classList.remove('invalid-field');
             }
         }
 
         if (!hasError && startVal && endVal && typeId) {
-            const available = leaveBalances[typeId] !== undefined ? parseFloat(leaveBalances[typeId]) : 0;
-            let requested = (duration !== 'FULL_DAY') ? 0.5 : calculateWorkingDaysJS(startVal, endVal);
-
-            if (requested > available) {
-                hasError = true;
-                msg = `Insufficient balance. Available: ${available} Days, Requested: ${requested} Days.`;
-            }
+            const d1 = new Date(startVal);
+            const d2 = new Date(endVal);
             
-            if (!hasError && requested === 0 && startVal && endVal) {
+            // Check if start or end date specifically falls on a weekend
+            const isStartWeekend = (d1.getDay() === 0 || d1.getDay() === 6);
+            const isEndWeekend = (d2.getDay() === 0 || d2.getDay() === 6);
+
+            if (isStartWeekend || isEndWeekend) {
                 hasError = true;
                 msg = "You cannot apply for leave on weekends (Saturday/Sunday).";
             }
+
+            if (!hasError) {
+                const available = leaveBalances[typeId] !== undefined ? parseFloat(leaveBalances[typeId]) : 0;
+                let requested = (duration !== 'FULL_DAY') ? 0.5 : calculateWorkingDaysJS(startVal, endVal);
+
+                if (requested > available) {
+                    hasError = true;
+                    msg = `Insufficient balance. Available: ${available} Days, Requested: ${requested} Days.`;
+                }
+                
+                // Fallback for full-range weekend selection
+                if (!hasError && requested === 0 && startVal && endVal) {
+                    hasError = true;
+                    msg = "You cannot apply for leave on weekends (Saturday/Sunday).";
+                }
+            }
+        }
+
+        // FILE SIZE CONSTRAINT VALIDATION (Max 5MB)
+        if (!hasError && attachmentEl.files && attachmentEl.files.length > 0) {
+            const uploadedFile = attachmentEl.files[0];
+            const maxAllowedBytes = 5 * 1024 * 1024; // Exactly 5,242,880 bytes
+            
+            if (uploadedFile.size > maxAllowedBytes) {
+                hasError = true;
+                msg = "File exceeds the 5MB size limit! Please upload a smaller attachment";
+                uploadZone.classList.add('invalid-field');
+            } else {
+                uploadZone.classList.remove('invalid-field');
+            }
+        } else if (!hasError) {
+            uploadZone.classList.remove('invalid-field');
         }
 
         if (hasError) {
@@ -642,6 +745,22 @@ to {
           addInput("hospitalName", "Hospital Facility", "text", true, "HOSPITAL NAME");
           addInput("admissionDate", "Admission Date", "date", true, "");
           addInput("dischargeDate", "Discharge Date", "date", true, "");
+          
+          // Locked submeta attribute: force admissionDate readOnly and sync value on generation
+          const admEl = document.querySelector('input[name="admissionDate"]');
+          if (admEl) {
+              admEl.value = startEl.value || "";
+              admEl.readOnly = true;
+              admEl.style.setProperty('background-color', '#f1f5f9', 'important');
+              admEl.style.setProperty('color', '#94a3b8', 'important');
+              admEl.style.setProperty('cursor', 'not-allowed', 'important');
+          }
+          
+          // Set lower limit bounds on discharge date instantly
+          const disEl = document.querySelector('input[name="dischargeDate"]');
+          if (disEl && startEl.value) {
+              disEl.setAttribute('min', startEl.value);
+          }
           setRequired(true);
       } else if (code.includes("MATERNITY") || code === "ML") {
           addInput("maternityClinic", "Consultation Clinic", "text", true, "CLINIC NAME");
@@ -673,6 +792,7 @@ to {
         dynamicFields.appendChild(div);
     }
 
+    // Create dropdown selection
     function addSelect(name, labelText, req, options) {
         dynamicAttr.style.display = "block";
         const div = createFieldContainer(labelText, req);
@@ -695,10 +815,32 @@ to {
 
     function setRequired(val) { docReqLabel.style.display = val ? "inline" : "none"; attachmentEl.required = val; }
 
+    // REAL-TIME CONSTRAINTS LISTENER FOR EXTRA DATA ATTRIBUTES (Spouse Name, Week Preg, Emergency Contact)
     document.addEventListener('input', function(e) {
         if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // Apply Uppercase styling
             if(e.target.type !== 'date' && e.target.type !== 'email' && e.target.type !== 'password' && e.target.type !== 'file') {
                 e.target.value = e.target.value.toUpperCase();
+            }
+
+            // Constraint: Emergency contact - numbers and dashes only (strip alphabetical input)
+            if (e.target.name === 'emergencyContact') {
+                let val = e.target.value.replace(/\D/g, '').slice(0, 11);
+                if (val.length > 3) {
+                    e.target.value = val.substring(0, 3) + '-' + val.substring(3);
+                } else {
+                    e.target.value = val;
+                }
+            }
+
+            // Constraint: Spouse name - uppercase letters, spaces, and apostrophes only
+            if (e.target.name === 'spouseName') {
+                e.target.value = e.target.value.replace(/[^A-Z\s']/g, '');
+            }
+
+            // Constraint: Week of pregnancy - numeric integers only
+            if (e.target.name === 'weekPregnancy') {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
             }
         }
     });

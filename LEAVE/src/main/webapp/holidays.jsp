@@ -129,7 +129,7 @@ th {
 	letter-spacing: 0.05em;
 }
 
-/* ✅ ACTIVE ROW HIGHLIGHT - Visible for 3 seconds */
+/* ACTIVE ROW HIGHLIGHT - Visible for 3 seconds */
 .row-highlight {
 	background-color: #f1f5f9 !important;
 	border-left: 4px solid #2563eb;
@@ -251,18 +251,18 @@ th {
 	overflow: hidden;
 }
 
-@
-keyframes slideUp {
-	from {opacity: 0;
-	transform: translateY(20px);
+@keyframes slideUp {
+	from {opacity: 0; transform: translateY(20px);}
+	to {opacity: 1; transform: translateY(0);}
 }
 
-to {
-	opacity: 1;
-	transform: translateY(0);
+/* Form subtle shake animation for validation focus */
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	20%, 60% { transform: translateX(-6px); }
+	40%, 80% { transform: translateX(6px); }
 }
 
-}
 .modal-header {
 	padding: 20px 24px;
 	border-bottom: 1px solid #f1f5f9;
@@ -290,13 +290,12 @@ to {
 	letter-spacing: 0.05em;
 }
 
-/* UPDATED: form-control to 45px height and 20px padding */
 .form-control {
 	width: 100%;
 	height: 45px !important;
 	padding: 0 20px !important;
 	border-radius: 12px;
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 	outline: none;
 	font-size: 14px;
 	font-weight: 600;
@@ -308,6 +307,12 @@ to {
 .form-control:focus {
 	border-color: var(--blue-primary);
 	box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* INVALID FIELD STYLING (For QA Testing feedback) */
+.form-control.invalid-field {
+	border-color: var(--red) !important;
+	background-color: #fff1f2 !important;
 }
 
 .btn-submit {
@@ -478,9 +483,10 @@ to {
 		</div>
 	</main>
 
+	<!-- Registration Modal -->
 	<div class="modal-overlay" id="holidayModal">
 		<div class="modal-content">
-			<form action="ManageHoliday" method="POST" id="holidayForm">
+			<form action="ManageHoliday" method="POST" id="holidayForm" novalidate>
 				<input type="hidden" name="action" id="modalAction" value="ADD">
 				<input type="hidden" name="holidayId" id="modalId">
 
@@ -493,18 +499,22 @@ to {
 						class="text-slate-400 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"><%= XCircleIcon("w-6 h-6") %></button>
 				</div>
 				<div class="modal-body">
+					<!-- Holiday Name Field -->
 					<div class="form-group">
-						<label>Holiday Description</label> <input type="text"
-							name="holidayName" id="modalName" class="form-control" required
-							placeholder="e.g. LUNAR NEW YEAR">
+						<label>Holiday Description *</label> 
+						<input type="text" name="holidayName" id="modalName" class="form-control" required placeholder="e.g. LUNAR NEW YEAR">
 					</div>
+					
+					<!-- Date Picker Field -->
 					<div class="form-group">
-						<label>Date</label> <input type="date" name="holidayDate"
-							id="modalDate" class="form-control" required>
+						<label>Date *</label> 
+						<input type="date" name="holidayDate" id="modalDate" class="form-control" required>
 					</div>
+					
+					<!-- Category Field -->
 					<div class="form-group">
-						<label>Holiday Category</label> <select name="holidayType"
-							id="modalType" class="form-control" required>
+						<label>Holiday Category *</label> 
+						<select name="holidayType" id="modalType" class="form-control" required>
 							<option value="PUBLIC">PUBLIC</option>
 							<option value="STATE">STATE</option>
 							<option value="COMPANY">COMPANY</option>
@@ -519,6 +529,7 @@ to {
 		</div>
 	</div>
 
+	<!-- Action Confirmation Modal -->
 	<div class="modal-overlay" id="confirmModal">
 		<div class="modal-content"
 			style="width: 400px; text-align: center; padding: 32px;">
@@ -534,7 +545,7 @@ to {
 				<button type="button" onclick="closeConfirm()"
 					class="btn-confirm-no flex-1">Cancel</button>
 				<button type="button" id="btnConfirmProceed"
-					class="btn-confirm-yes flex-1 shadow-lg shadow-red-100">Proceed</button>
+					class="btn-confirm-yes flex-1 shadow-lg">Proceed</button>
 			</div>
 		</div>
 	</div>
@@ -581,14 +592,70 @@ to {
             }
         });
 
+        // Real-time constraints for Holiday Name
+        document.getElementById('modalName').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+            this.classList.remove('invalid-field');
+
+            let cursorPosition = this.selectionStart;
+            let originalLength = this.value.length;
+
+            // Alphanumeric + single space filter
+            let filteredValue = this.value.replace(/[^A-Z0-9\s]/g, '');
+            filteredValue = filteredValue.replace(/\s\s+/g, ' '); // collapse consecutive spaces
+
+            if (this.value !== filteredValue) {
+                this.value = filteredValue;
+                let offset = originalLength - filteredValue.length;
+                this.setSelectionRange(cursorPosition - offset, cursorPosition - offset);
+            }
+        });
+
+        // Real-time date input constraints reset
+        document.getElementById('modalDate').addEventListener('change', function() {
+            this.classList.remove('invalid-field');
+        });
+
+        // Pre-submission validation suite
         function triggerConfirm(action, formId) {
+            if (formId === 'holidayForm') {
+                const nameInput = document.getElementById('modalName');
+                const dateInput = document.getElementById('modalDate');
+
+                let isFormValid = true;
+
+                // Validate Holiday Name
+                const cleanName = nameInput.value.trim();
+                if (cleanName.length < 3 || cleanName.length > 50) {
+                    nameInput.classList.add('invalid-field');
+                    isFormValid = false;
+                }
+
+                // Validate Date Selection (Only checks if it is left blank)
+                if (!dateInput.value) {
+                    dateInput.classList.add('invalid-field');
+                    isFormValid = false;
+                } else {
+                    dateInput.classList.remove('invalid-field');
+                }
+
+                // If check fails, trigger card shake (No alerts used)
+                if (!isFormValid) {
+                    const formContainer = document.getElementById('holidayForm');
+                    formContainer.style.animation = 'none';
+                    formContainer.offsetHeight; // trigger reflow
+                    formContainer.style.animation = 'shake 0.4s ease-in-out';
+                    return;
+                }
+            }
+
             currentTargetFormId = formId;
             const titleEl = document.getElementById('confirmTitle');
             const msgEl = document.getElementById('confirmMsg');
             const iconContainer = document.getElementById('confirmIconContainer');
             const btnProceed = document.getElementById('btnConfirmProceed');
 
-            // Reset classes
+            // Reset dialog styles
             btnProceed.className = "btn-confirm-yes flex-1 shadow-lg";
             iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center";
 
@@ -628,16 +695,21 @@ to {
             document.getElementById('holidayModal').classList.add('show');
         }
 
-        function closeModal() { document.getElementById('holidayModal').classList.remove('show'); }
+        // Full validation reset upon modal closing
+        function closeModal() { 
+            document.getElementById('holidayModal').classList.remove('show'); 
+            
+            const nameInput = document.getElementById('modalName');
+            const dateInput = document.getElementById('modalDate');
+
+            nameInput.classList.remove('invalid-field');
+            dateInput.classList.remove('invalid-field');
+        }
 
         window.onclick = (e) => { 
             if (e.target.id === 'holidayModal') closeModal(); 
             if (e.target.id === 'confirmModal') closeConfirm(); 
         }
-
-        document.getElementById('modalName').addEventListener('input', function() {
-            this.value = this.value.toUpperCase();
-        });
     </script>
 </body>
 </html>

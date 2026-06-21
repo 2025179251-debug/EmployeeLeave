@@ -93,8 +93,8 @@
 			<span class="shrink-0"><%= BriefcaseIcon("w-5 h-5") %></span> <span
 			class="hidden lg:block whitespace-nowrap text-sm font-semibold">Admin
 				Dashboard</span>
-		</a> <a href="RegisterEmployee"
-			class="nav-item flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl <%= (pageKey.contains("employee") || pageKey.contains("register")) ? "active-blue" : "text-slate-400 hover:bg-slate-800/50 hover:text-white" %>">
+		</a> <a href="EmployeeDirectory"
+			class="nav-item flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl <%= (pageKey.contains("employee")) ? "active-blue" :"text-slate-400 hover:bg-slate-800/50 hover:text-white" %>">
 			<span class="shrink-0"><%= UsersIcon("w-5 h-5") %></span> <span
 			class="hidden lg:block whitespace-nowrap text-sm font-semibold">Employees</span>
 		</a> <a href="LeaveEmpBalances"
@@ -128,7 +128,7 @@
 			<span class="shrink-0"><%= HomeIcon("w-5 h-5") %></span> <span
 			class="hidden lg:block whitespace-nowrap text-sm font-semibold">Dashboard</span>
 		</a> <a href="ApplyLeave"
-			class="nav-item flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl <%= pageKey.contains("apply") ? "active-blue" : "text-slate-400 hover:bg-slate-800/50 hover:text-white" %>">
+			class="nav-item flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl <%= (pageKey.contains("apply")) ? "active-blue" : "text-slate-400 hover:bg-slate-800/50 hover:text-white" %>">
 			<span class="shrink-0"><%= CalendarIcon("w-5 h-5") %></span> <span
 			class="hidden lg:block whitespace-nowrap text-sm font-semibold">Apply
 				Leave</span>

@@ -60,6 +60,39 @@ if (userObj != null) {
 
 	combinedAddress = !addrParts.isEmpty() ? String.join(", ", addrParts) : "NO ADDRESS RECORDED.";
 }
+
+// SECURE TOAST MESSAGE EXTRACTION (Accepts both "message" and "msg" keys)
+String jspMsg = "";
+if (request.getParameter("msg") != null) {
+	jspMsg = request.getParameter("msg");
+} else if (request.getParameter("message") != null) {
+	jspMsg = request.getParameter("message");
+} else if (request.getAttribute("msg") != null) {
+	jspMsg = (String) request.getAttribute("msg");
+} else if (request.getAttribute("message") != null) {
+	jspMsg = (String) request.getAttribute("message");
+} else if (session.getAttribute("msg") != null) {
+	jspMsg = (String) session.getAttribute("msg");
+	session.removeAttribute("msg");
+} else if (session.getAttribute("message") != null) {
+	jspMsg = (String) session.getAttribute("message");
+	session.removeAttribute("message");
+}
+
+// Map "success" to a user-friendly full sentence
+if ("success".equalsIgnoreCase(jspMsg.trim())) {
+	jspMsg = "Profile updated successfully!";
+}
+
+String jspError = "";
+if (request.getParameter("error") != null) {
+	jspError = request.getParameter("error");
+} else if (request.getAttribute("error") != null) {
+	jspError = (String) request.getAttribute("error");
+} else if (session.getAttribute("error") != null) {
+	jspError = (String) session.getAttribute("error");
+	session.removeAttribute("error");
+}
 %>
 
 <!DOCTYPE html>
@@ -307,6 +340,15 @@ h2.title {
 	background: #ef4444;
 	color: white;
 }
+
+.input-hint {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+    transition: color 0.2s;
+}
 </style>
 </head>
 <body class="flex">
@@ -444,7 +486,7 @@ h2.title {
 							%>
 							<div class="space-y-5">
 								<div class="space-y-1">
-									<span class="label-xs">Full Legal Name</span><input
+									<span class="label-xs">Full Name</span><input
 										value="<%=userObj.getFullName()%>" class="read-only-box"
 										disabled>
 								</div>
@@ -459,6 +501,7 @@ h2.title {
 											id="phone" type="text"
 											value="<%=userObj.getPhone() != null ? userObj.getPhone() : ""%>"
 											placeholder="012-3456789">
+                                        <span id="phoneHint" class="input-hint text-slate-400">FORMAT: 01X-XXXXXXX</span>
 									</div>
 								</div>
 								<div class="pt-4 border-t border-slate-100 space-y-4">
@@ -479,6 +522,7 @@ h2.title {
 												name="postalCode" id="postalCode" type="text"
 												value="<%=userObj.getPostalCode() != null ? userObj.getPostalCode() : ""%>"
 												maxlength="5">
+                                            <span id="postalHint" class="input-hint text-slate-400">POSTALCODE 5 digit number</span>
 										</div>
 									</div>
 									<div class="space-y-1">
@@ -556,11 +600,23 @@ h2.title {
 	</main>
 
 	<script>
-    // 1. SUCCESS / ERROR MESSAGE (3 SECONDS)
+    // 1. SUCCESS / ERROR TOAST HANDLER WITH AUTO DISAPPEAR & PARAMETER CLEANSING
     window.addEventListener('load', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const msg = urlParams.get('msg');
-        const error = urlParams.get('error');
+        // Read native JSP variables computed securely server-side
+        let msg = "<%= jspMsg.replace("\"", "\\\"").replace("\n", " ") %>".trim();
+        let error = "<%= jspError.replace("\"", "\\\"").replace("\n", " ") %>".trim();
+        
+        // Comprehensive fallback: inspect URL queries dynamically for both standard keys
+        if (!msg && !error) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawMsg = urlParams.get('msg') || urlParams.get('message') || "";
+            if (rawMsg.toLowerCase() === 'success') {
+                msg = "Profile updated successfully!";
+            } else {
+                msg = rawMsg;
+            }
+            error = urlParams.get('error') || urlParams.get('err') || "";
+        }
         
         if (msg || error) {
             const toast = document.getElementById('statusToast');
@@ -577,11 +633,21 @@ h2.title {
                 toastIcon.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
             }
             
+            // Pop up the toast smoothly
             toast.classList.add('show');
+            
+            // Auto disappear timer: exactly 3 seconds (3000ms)
             setTimeout(() => {
                 toast.classList.remove('show');
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({path:newUrl}, '', newUrl);
+                
+                // Clean browser address bar cleanly to prevent re-triggering upon reload
+                const url = new URL(window.location.href);
+                if (url.searchParams.has('msg') || url.searchParams.has('message') || url.searchParams.has('error')) {
+                    url.searchParams.delete('msg');
+                    url.searchParams.delete('message');
+                    url.searchParams.delete('error');
+                    window.history.replaceState({}, '', url.pathname + url.search);
+                }
             }, 3000);
         }
     });
@@ -594,33 +660,65 @@ h2.title {
 
             if (this.id === 'phone') {
                 let val = this.value.replace(/\D/g, '').slice(0, 11);
+                const hint = document.getElementById('phoneHint');
+                
                 if (val.length > 3) {
                     this.value = val.substring(0, 3) + '-' + val.substring(3);
                 } else { this.value = val; }
+
+                // UI Clue logic
+                if (val.length > 0 && val.length < 10) {
+                    hint.classList.replace('text-slate-400', 'text-red-500');
+                } else {
+                    hint.classList.replace('text-red-500', 'text-slate-400');
+                }
             }
+
             if (this.id === 'postalCode') {
                 this.value = this.value.replace(/\D/g, '').slice(0, 5);
+                const hint = document.getElementById('postalHint');
+
+                // UI Clue logic: Show red if partially filled or incorrect
+                if (this.value.length > 0 && this.value.length < 5) {
+                    hint.classList.replace('text-slate-400', 'text-red-500');
+                } else {
+                    hint.classList.replace('text-red-500', 'text-slate-400');
+                }
             }
+
             if (this.id === 'city') {
                 this.value = this.value.replace(/[0-9]/g, '');
             }
         });
     });
 
-    // 3. ON-BOX CONSTRAINTS (NO ALERT)
+    // 3. ON-BOX CONSTRAINTS (NO SYSTEM ALERTS)
     const form = document.getElementById('profileForm');
     if(form) {
         form.addEventListener('submit', function(e) {
             let isValid = true;
             const phone = document.getElementById('phone');
             const postal = document.getElementById('postalCode');
+            const phoneHint = document.getElementById('phoneHint');
+            const postalHint = document.getElementById('postalHint');
 
-            if (phone.value.replace(/-/g, '').length < 10) {
+            // Reset classes
+            phone.classList.remove('invalid-field');
+            postal.classList.remove('invalid-field');
+
+            // Enforce validation only if Phone has value (as it is an optional field)
+            const phoneVal = phone.value.replace(/-/g, '').trim();
+            if (phoneVal.length > 0 && phoneVal.length < 10) {
                 phone.classList.add('invalid-field');
+                phoneHint.classList.replace('text-slate-400', 'text-red-500');
                 isValid = false;
             }
-            if (postal.value.length !== 5) {
+
+            // Enforce validation only if Postal Code has value (as it is an optional field)
+            const postalVal = postal.value.trim();
+            if (postalVal.length > 0 && postalVal.length !== 5) {
                 postal.classList.add('invalid-field');
+                postalHint.classList.replace('text-slate-400', 'text-red-500');
                 isValid = false;
             }
 
@@ -650,4 +748,3 @@ h2.title {
 
 </body>
 </html>
-

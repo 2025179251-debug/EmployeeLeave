@@ -1,7 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*,java.time.*,java.time.format.*"%>
 <%@ include file="icon.jsp"%>
-<%@ page import="bean.LeaveBalance, bean.Holiday, util.LeaveBalanceEngine"%>
+<%@ page
+	import="bean.LeaveBalance, bean.Holiday, util.LeaveBalanceEngine"%>
 
 <%
 //=========================
@@ -11,8 +12,8 @@ HttpSession ses = request.getSession(false);
 String role = (ses != null) ? String.valueOf(ses.getAttribute("role")) : "";
 
 if (ses == null || ses.getAttribute("empid") == null
-		|| (!"EMPLOYEE".equalsIgnoreCase(role) && !"MANAGER".equalsIgnoreCase(role))) {
-	response.sendRedirect(request.getContextPath() + "/login.jsp?error=Please+login+as+employee+or+manager");
+		|| (!"EMPLOYEE".equalsIgnoreCase(role))) {
+	response.sendRedirect(request.getContextPath() + "/login.jsp?error=Please+login+as+employee");
 	return;
 }
 String fullname = String.valueOf(ses.getAttribute("fullname"));
@@ -73,7 +74,9 @@ String monthTitle = ym.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH)
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employee Dashboard | Klinik Dr Mohamad</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link
+	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+	rel="stylesheet">
 
 <style>
 :root {
@@ -100,7 +103,6 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
-/* Page Wrapper Responsiveness - Removed restrictive centering */
 .pageWrap {
 	padding: 24px 20px;
 	display: flex;
@@ -108,10 +110,10 @@ body {
 	width: 100%;
 }
 
-@media (min-width: 768px) {
-    .pageWrap {
-        padding: 32px 30px;
-    }
+@media ( min-width : 768px) {
+	.pageWrap {
+		padding: 32px 30px;
+	}
 }
 
 .title {
@@ -133,7 +135,6 @@ body {
 	display: block;
 }
 
-/* Leave Cards Design */
 .card {
 	background: var(--card);
 	border-radius: 16px;
@@ -145,7 +146,7 @@ body {
 	flex-direction: column;
 	transition: all 0.2s ease;
 	border-left-width: 5px;
-    min-height: 170px;
+	min-height: 170px;
 }
 
 .card:hover {
@@ -153,14 +154,40 @@ body {
 	box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.08);
 }
 
-/* Left Border Coloring */
-.card.annual { border-left-color: #3b82f6; background: linear-gradient(to right, #eff6ff 0%, #ffffff 20%); }
-.card.sick { border-left-color: #14b8a6; background: linear-gradient(to right, #f0fdfa 0%, #ffffff 20%); }
-.card.emergency { border-left-color: #ef4444; background: linear-gradient(to right, #fef2f2 0%, #ffffff 20%); }
-.card.hospitalization { border-left-color: #a855f7; background: linear-gradient(to right, #faf5ff 0%, #ffffff 20%); }
-.card.unpaid { border-left-color: #64748b; background: linear-gradient(to right, #f8fafc 0%, #ffffff 20%); }
-.card.maternity { border-left-color: #ec4899; background: linear-gradient(to right, #fdf2f8 0%, #ffffff 20%); }
-.card.paternity { border-left-color: #6366f1; background: linear-gradient(to right, #f5f3ff 0%, #ffffff 20%); }
+.card.annual {
+	border-left-color: #3b82f6;
+	background: linear-gradient(to right, #eff6ff 0%, #ffffff 20%);
+}
+
+.card.sick {
+	border-left-color: #14b8a6;
+	background: linear-gradient(to right, #f0fdfa 0%, #ffffff 20%);
+}
+
+.card.emergency {
+	border-left-color: #ef4444;
+	background: linear-gradient(to right, #fef2f2 0%, #ffffff 20%);
+}
+
+.card.hospitalization {
+	border-left-color: #a855f7;
+	background: linear-gradient(to right, #faf5ff 0%, #ffffff 20%);
+}
+
+.card.unpaid {
+	border-left-color: #64748b;
+	background: linear-gradient(to right, #f8fafc 0%, #ffffff 20%);
+}
+
+.card.maternity {
+	border-left-color: #ec4899;
+	background: linear-gradient(to right, #fdf2f8 0%, #ffffff 20%);
+}
+
+.card.paternity {
+	border-left-color: #6366f1;
+	background: linear-gradient(to right, #f5f3ff 0%, #ffffff 20%);
+}
 
 .label-badge {
 	font-size: 9px;
@@ -214,12 +241,11 @@ body {
 	font-weight: 900;
 }
 
-/* Calendar Styling - Larger Size */
 .cal-card {
 	background: #fff;
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 24px;
+	padding: 18px 24px 12px;
 	box-shadow: var(--shadow);
 }
 
@@ -227,14 +253,14 @@ body {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 }
 
 .calTitle {
 	font-weight: 950;
 	font-size: 17px;
 	color: #0f172a;
-    letter-spacing: -0.02em;
+	letter-spacing: -0.02em;
 }
 
 .calTable {
@@ -246,7 +272,7 @@ body {
 	font-size: 11px;
 	color: #94a3b8;
 	font-weight: 900;
-	padding-bottom: 12px;
+	padding-bottom: 8px;
 	text-transform: uppercase;
 }
 
@@ -254,18 +280,22 @@ body {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 38px;
-	height: 38px;
+	width: 34px;
+	height: 34px;
 	border-radius: 12px;
 	font-weight: 900;
 	font-size: 13px;
 	transition: 0.2s;
 	cursor: pointer;
-    margin-bottom: 2px;
+	margin-bottom: 2px;
 }
 
-@media (max-width: 480px) {
-    .dayBox { width: 32px; height: 32px; font-size: 11px; }
+@media ( max-width : 480px) {
+	.dayBox {
+		width: 30px;
+		height: 30px;
+		font-size: 11px;
+	}
 }
 
 .today {
@@ -273,7 +303,6 @@ body {
 	color: #fff !important;
 }
 
-/* Tooltip */
 .tipWrap {
 	position: relative;
 	display: inline-block;
@@ -308,23 +337,30 @@ body {
 	margin: 2px auto 0;
 }
 
-.h-public-dot { background: #ef4444; }
-.h-state-dot { background: #f97316; }
-.h-company-dot { background: #3b82f6; }
+.h-public-dot {
+	background: #ef4444;
+}
 
-/* Holiday Items */
+.h-state-dot {
+	background: #f97316;
+}
+
+.h-company-dot {
+	background: #3b82f6;
+}
+
 .hListItem {
 	display: flex;
 	gap: 12px;
 	align-items: center;
-	padding: 12px 0;
+	padding: 8px 0;
 	border-bottom: 1px solid #f8fafc;
 }
 
 .dateBadge {
-	width: 44px;
-	height: 44px;
-	border-radius: 12px;
+	width: 38px;
+	height: 38px;
+	border-radius: 10px;
 	flex-shrink: 0;
 	display: flex;
 	flex-direction: column;
@@ -335,33 +371,41 @@ body {
 }
 
 .dateBadge span:first-child {
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 950;
 	line-height: 1;
 }
 
 .dateBadge span:last-child {
-	font-size: 9px;
+	font-size: 8px;
 	font-weight: 800;
 	text-transform: uppercase;
 }
 
-.dateBadge.public { background: #fef2f2; border-color: #fee2e2; color: #ef4444; }
-.dateBadge.state { background: #fffaf5; border-color: #ffedd5; color: #f97316; }
-.dateBadge.company { background: #f0f9ff; border-color: #dbeafe; color: #3b82f6; }
+.dateBadge.public {
+	background: #fef2f2;
+	border-color: #fee2e2;
+	color: #ef4444;
+}
 
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.dateBadge.state {
+	background: #fffaf5;
+	border-color: #ffedd5;
+	color: #f97316;
+}
 
-.clock-box { text-align: left; }
-@media (min-width: 768px) { .clock-box { text-align: right; } }
+.dateBadge.company {
+	background: #f0f9ff;
+	border-color: #dbeafe;
+	color: #3b82f6;
+}
 
 #clock {
 	font-size: 28px;
 	font-weight: 950;
 	color: var(--text);
 	font-variant-numeric: tabular-nums;
-    line-height: 1;
+	line-height: 1;
 }
 
 #date {
@@ -369,7 +413,7 @@ body {
 	font-weight: 700;
 	color: var(--muted);
 	text-transform: uppercase;
-    margin-top: 4px;
+	margin-top: 4px;
 }
 </style>
 </head>
@@ -377,226 +421,248 @@ body {
 <body class="overflow-x-hidden">
 	<jsp:include page="sidebar.jsp" />
 
-	<main class="ml-20 lg:ml-64 min-h-screen flex flex-col transition-all duration-300">
+	<main
+		class="ml-20 lg:ml-64 min-h-screen flex flex-col transition-all duration-300">
 		<jsp:include page="topbar.jsp" />
 
 		<div class="pageWrap">
-			<% if (dbError != null && !dbError.isBlank()) { %>
-			<div class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 font-bold text-sm border border-red-100 uppercase">
-				DB ERROR: <%=dbError%>
+			<%
+			if (dbError != null && !dbError.isBlank()) {
+			%>
+			<div
+				class="bg-red-50 text-red-600 p-4 rounded-xl mb-6 font-bold text-sm border border-red-100 uppercase">
+				DB ERROR:
+				<%=dbError%>
 			</div>
-			<% } %>
+			<%
+			}
+			%>
 
-			<!-- Header Section -->
-			<div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+			<div
+				class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
 				<div>
 					<h2 class="title">EMPLOYEE DASHBOARD</h2>
 					<span class="sub-label"> Welcome back <span
-						class="text-[15px] font-black"><%=fullname%></span> <br> Access your leave summary and calendar
+						class="text-[15px] font-black"><%=fullname%></span> <br>
+						Access your leave summary and calendar
 					</span>
-			    </div>
-
-                <div class="clock-box bg-white/60 px-6 py-3 rounded-2xl border border-white shadow-sm">
-                    <div id="clock">00:00:00</div>
-                    <div id="date">Loading...</div>
-                </div>
-		    </div>
-
-		<div class="flex flex-col lg:flex-row gap-10 items-start">
-
-			<!-- Left Section: Leave Cards - Grid locked to 2 columns on desktop -->
-			<div class="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
-				<%
-				java.text.DecimalFormat df = new java.text.DecimalFormat("0.#");
-				List<String> typesOrder = new ArrayList<>(
-						Arrays.asList("ANNUAL", "SICK", "EMERGENCY", "HOSPITALIZATION", "UNPAID", "MATERNITY", "PATERNITY"));
-
-				for (String type : typesOrder) {
-					LeaveBalance b = balByType.get(type);
-					if (b == null)
-						continue;
-
-					double entVal = b.getEntitlement();
-					double usedVal = b.getUsed();
-					double pendVal = b.getPending();
-					double totalVal = b.getTotalAvailable();
-
-					String cardTheme = type.toLowerCase().replace(" ", "-");
-					if (cardTheme.contains("maternity"))
-						cardTheme = "maternity";
-					else if (cardTheme.contains("paternity"))
-						cardTheme = "paternity";
-				%>
-				<div class="card <%=cardTheme%>">
-					<div class="flex justify-between items-start mb-3">
-						<div
-							class="w-9 h-9 bg-white/80 rounded-xl border border-slate-100 flex items-center justify-center text-slate-600 shadow-sm">
-							<%=CalendarIcon("w-5 h-5")%>
-						</div>
-						<span class="label-badge"><%=type.replace("_", " ")%></span>
-					</div>
-
-					<div class="mt-1">
-						<span
-							class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Available
-							Balance</span>
-						<div class="big flex items-baseline">
-							<span><%=df.format(totalVal)%><span class="slash">/</span><%=df.format(entVal)%></span>
-							<span
-								class="text-[11px] font-black text-slate-400 uppercase ml-2">Days</span>
-						</div>
-					</div>
-
-					<div class="card-footer">
-						<div class="stats-row">
-							<div class="stat-box">
-								<span>Taken</span> <b><%=df.format(usedVal)%></b>
-							</div>
-							<div class="stat-box text-right">
-								<span>Pending</span> <b class="text-orange-500"><%=df.format(pendVal)%></b>
-							</div>
-						</div>
-					</div>
 				</div>
-				<%
-				}
-				%>
+
+				<div
+					class="clock-box bg-white/60 px-6 py-3 rounded-2xl border border-white shadow-sm">
+					<div id="clock">00:00:00</div>
+					<div id="date">Loading...</div>
+				</div>
 			</div>
 
-			<!-- Right Section: Tools - Calendar and Holidays -->
-			<div class="w-full lg:w-[420px] flex flex-col gap-8">
+			<div class="flex flex-col lg:flex-row gap-10 items-start">
 
-				<!-- Calendar Card -->
-				<div class="cal-card">
-					<div class="calHeader">
-						<div class="calTitle uppercase tracking-tighter font-black"><%=monthTitle%></div>
-						<div class="flex gap-2">
-							<a href="EmployeeDashboard?year=<%=prev.getYear()%>&month=<%=prev.getMonthValue()%>"
-								class="w-9 h-9 flex items-center justify-center border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm bg-white">
-								<%=ChevronLeftIcon("w-4 h-4 text-slate-500")%>
-							</a> <a
-								href="EmployeeDashboard?year=<%=next.getYear()%>&month=<%=next.getMonthValue()%>"
-								class="w-9 h-9 flex items-center justify-center border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm bg-white">
-								<%=ChevronRightIcon("w-4 h-4 text-slate-500")%>
-							</a>
+				<div class="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
+					<%
+					java.text.DecimalFormat df = new java.text.DecimalFormat("0.#");
+					List<String> typesOrder = new ArrayList<>(
+							Arrays.asList("ANNUAL", "SICK", "EMERGENCY", "HOSPITALIZATION", "UNPAID", "MATERNITY", "PATERNITY"));
+
+					for (String type : typesOrder) {
+						LeaveBalance b = balByType.get(type);
+						if (b == null)
+							continue;
+
+						double entVal = b.getEntitlement();
+						double usedVal = b.getUsed();
+						double pendVal = b.getPending();
+						double totalVal = b.getTotalAvailable();
+
+						String cardTheme = type.toLowerCase().replace(" ", "-");
+						if (cardTheme.contains("maternity"))
+							cardTheme = "maternity";
+						else if (cardTheme.contains("paternity"))
+							cardTheme = "paternity";
+					%>
+					<div class="card <%=cardTheme%>">
+						<div class="flex justify-between items-start mb-3">
+							<div
+								class="w-9 h-9 bg-white/80 rounded-xl border border-slate-100 flex items-center justify-center text-slate-600 shadow-sm">
+								<%=CalendarIcon("w-5 h-5")%>
+							</div>
+							<span class="label-badge"><%=type.replace("_", " ")%></span>
+						</div>
+
+						<div class="mt-1">
+							<span
+								class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Available
+								Balance</span>
+							<div class="big flex items-baseline">
+								<span><%=df.format(totalVal)%><span class="slash">/</span><%=df.format(entVal)%></span>
+								<span
+									class="text-[11px] font-black text-slate-400 uppercase ml-2">Days</span>
+							</div>
+						</div>
+
+						<div class="card-footer">
+							<div class="stats-row">
+								<div class="stat-box">
+									<span>Taken</span> <b><%=df.format(usedVal)%></b>
+								</div>
+								<div class="stat-box text-right">
+									<span>Pending</span> <b class="text-orange-500"><%=df.format(pendVal)%></b>
+								</div>
+							</div>
 						</div>
 					</div>
+					<%
+					}
+					%>
+				</div>
 
-					<table class="calTable">
-						<thead>
-							<tr>
-								<th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th>
-							</tr>
-						</thead>
-						<tbody>
-							<%
-							int dayCounter = 1;
-							for (int row = 0; row < 6; row++) {
-							%>
-							<tr>
-								<%
-								for (int col = 0; col < 7; col++) {
-									int cellIndex = row * 7 + col;
-									if (cellIndex < firstDow || dayCounter > daysInMonth) {
-								%><td><span class="dayBox text-slate-100">&bull;</span></td>
-								<%
-								} else {
-								LocalDate cursor = ym.atDay(dayCounter);
-								boolean isToday = cursor.equals(today);
-								List<Holiday> hs = holidayMap.get(cursor);
-								boolean isHoliday = (hs != null && !hs.isEmpty());
+				<div class="w-full lg:w-[420px] flex flex-col gap-8">
 
-								String hNames = "";
-								String dotClass = "";
-								if (isHoliday) {
-									StringBuilder sb = new StringBuilder();
-									for (int k = 0; k < hs.size(); k++) {
-										sb.append(hs.get(k).getName());
-										if (k < hs.size() - 1)
-									sb.append(" • ");
-									}
-									hNames = sb.toString();
-									String hType = hs.get(0).getType().toUpperCase();
-									if (hType.contains("PUBLIC"))
-										dotClass = "h-public-dot";
-									else if (hType.contains("STATE"))
-										dotClass = "h-state-dot";
-									else if (hType.contains("COMPANY"))
-										dotClass = "h-company-dot";
-								}
+					<div class="cal-card">
+						<div class="calHeader">
+							<div class="calTitle uppercase tracking-tighter font-black"><%=monthTitle%></div>
+							<div class="flex gap-2">
+								<a
+									href="EmployeeDashboard?year=<%=prev.getYear()%>&month=<%=prev.getMonthValue()%>"
+									class="w-9 h-9 flex items-center justify-center border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm bg-white">
+									<%=ChevronLeftIcon("w-4 h-4 text-slate-500")%>
+								</a> <a
+									href="EmployeeDashboard?year=<%=next.getYear()%>&month=<%=next.getMonthValue()%>"
+									class="w-9 h-9 flex items-center justify-center border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors shadow-sm bg-white">
+									<%=ChevronRightIcon("w-4 h-4 text-slate-500")%>
+								</a>
+							</div>
+						</div>
+
+						<table class="calTable">
+							<thead>
+								<tr>
+									<th>S</th>
+									<th>M</th>
+									<th>T</th>
+									<th>W</th>
+									<th>T</th>
+									<th>F</th>
+									<th>S</th>
+								</tr>
+							</thead>
+							<tbody>
+								<%
+								int dayCounter = 1;
+								for (int row = 0; row < 6; row++) {
 								%>
-								<td>
-									<div class="tipWrap">
-										<span
-											class="dayBox <%=isToday ? "today shadow-lg" : "hover:bg-slate-100 text-slate-600"%>">
-											<%=dayCounter%>
-										</span>
-										<%
-										if (isHoliday) {
-										%>
-										<div class="h-dot <%=dotClass%>"></div>
-										<span class="tip"><%=hNames%></span>
-										<%
+								<tr>
+									<%
+									for (int col = 0; col < 7; col++) {
+										int cellIndex = row * 7 + col;
+										if (cellIndex < firstDow || dayCounter > daysInMonth) {
+									%><td><span class="dayBox text-slate-100">&bull;</span></td>
+									<%
+									} else {
+									LocalDate cursor = ym.atDay(dayCounter);
+									boolean isToday = cursor.equals(today);
+									List<Holiday> hs = holidayMap.get(cursor);
+									boolean isHoliday = (hs != null && !hs.isEmpty());
+
+									String hNames = "";
+									String dotClass = "";
+									if (isHoliday) {
+										StringBuilder sb = new StringBuilder();
+										for (int k = 0; k < hs.size(); k++) {
+											sb.append(hs.get(k).getName());
+											if (k < hs.size() - 1)
+										sb.append(" • ");
 										}
-										%>
-									</div>
-								</td>
+										hNames = sb.toString();
+										String hType = hs.get(0).getType().toUpperCase();
+										if (hType.contains("PUBLIC"))
+											dotClass = "h-public-dot";
+										else if (hType.contains("STATE"))
+											dotClass = "h-state-dot";
+										else if (hType.contains("COMPANY"))
+											dotClass = "h-company-dot";
+									}
+									%>
+									<td>
+										<div class="tipWrap">
+											<span
+												class="dayBox <%=isToday ? "today shadow-lg" : "hover:bg-slate-100 text-slate-600"%>">
+												<%=dayCounter%>
+											</span>
+											<%
+											if (isHoliday) {
+											%>
+											<div class="h-dot <%=dotClass%>"></div>
+											<span class="tip"><%=hNames%></span>
+											<%
+											}
+											%>
+										</div>
+									</td>
+									<%
+									dayCounter++;
+									}
+									}
+									%>
+								</tr>
 								<%
-								dayCounter++;
-								}
+								if (dayCounter > daysInMonth)
+									break;
 								}
 								%>
-							</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!-- Upcoming Holidays Card - Updated for smaller height -->
+					<div class="cal-card flex flex-col">
+						<h3
+							class="font-black text-[12px] uppercase text-slate-400 tracking-widest mb-3 flex items-center gap-2 border-b pb-3 border-slate-50 shrink-0">
+							<%=CalendarIcon("w-4 h-4 text-blue-500")%>
+							Upcoming Holidays
+						</h3>
+						<div class="space-y-0.5">
 							<%
-							if (dayCounter > daysInMonth)
+							int upCount = 0;
+							for (Holiday h : holidayUpcoming) {
+								if (h.getDate().isAfter(today)) {
+									if (upCount >= 4)
 								break;
+
+									LocalDate d = h.getDate();
+									String hType = h.getType().toUpperCase();
+									String badgeCls = hType.contains("PUBLIC") ? "public" : (hType.contains("STATE") ? "state" : "company");
+							%>
+							<div
+								class="hListItem hover:bg-slate-50 px-1 rounded-lg transition-colors border-none">
+								<div class="dateBadge <%=badgeCls%>">
+									<span><%=d.getDayOfMonth()%></span> <span><%=d.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH).toUpperCase()%></span>
+								</div>
+								<div class="min-w-0">
+									<p
+										class="font-bold text-[12px] text-slate-800 truncate leading-tight uppercase mb-0.5"><%=h.getName()%></p>
+									<div
+										class="text-[9px] font-black text-slate-400 uppercase tracking-tighter"><%=h.getType()%></div>
+								</div>
+							</div>
+							<%
+							upCount++;
+							}
 							}
 							%>
-						</tbody>
-					</table>
-				</div>
-
-				<!-- Upcoming Holidays Card -->
-				<div class="cal-card flex flex-col">
-					<h3 class="font-black text-[12px] uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2 border-b pb-4 border-slate-50 shrink-0">
-						<%=CalendarIcon("w-4 h-4 text-blue-500")%>
-						Upcoming Holidays
-					</h3>
-					<div class="space-y-1">
-						<%
-						int upCount = 0;
-						for (Holiday h : holidayUpcoming) {
-							if (upCount >= 5)
-								break;
-							LocalDate d = h.getDate();
-							String hType = h.getType().toUpperCase();
-							String badgeCls = hType.contains("PUBLIC") ? "public" : (hType.contains("STATE") ? "state" : "company");
-						%>
-						<div class="hListItem hover:bg-slate-50 px-2 rounded-xl transition-colors border-none">
-							<div class="dateBadge <%=badgeCls%>">
-								<span><%=d.getDayOfMonth()%></span> <span><%=d.getMonth().getDisplayName(TextStyle.SHORT, Locale.ENGLISH).toUpperCase()%></span>
-							</div>
-							<div class="min-w-0">
-								<p class="font-bold text-[13px] text-slate-800 truncate leading-tight uppercase mb-1"><%=h.getName()%></p>
-								<div class="text-[10px] font-black text-slate-400 uppercase tracking-tighter"><%=h.getType()%></div>
-							</div>
+							<%
+							if (upCount == 0) {
+							%>
+							<p
+								class="text-[11px] font-bold text-slate-300 italic text-center py-6">No
+								upcoming holidays.</p>
+							<%
+							}
+							%>
 						</div>
-						<%
-						upCount++;
-						}
-						%>
-						<%
-						if (holidayUpcoming.isEmpty()) {
-						%>
-						<p class="text-[11px] font-bold text-slate-300 italic text-center py-10">No upcoming holidays scheduled.</p>
-						<%
-						}
-						%>
 					</div>
-				</div>
 
+				</div>
 			</div>
-		</div>
 		</div>
 	</main>
 

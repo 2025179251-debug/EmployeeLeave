@@ -7,47 +7,69 @@
 <%@ include file="icon.jsp"%>
 
 <%
-    // ADMIN GUARD
-    HttpSession ses = request.getSession(false);
-    if (ses == null || ses.getAttribute("empid") == null || !"ADMIN".equalsIgnoreCase(String.valueOf(ses.getAttribute("role")))) {
-        response.sendRedirect("login.jsp"); return;
-    }
+// ADMIN GUARD
+HttpSession ses = request.getSession(false);
+if (ses == null || ses.getAttribute("empid") == null
+		|| !"ADMIN".equalsIgnoreCase(String.valueOf(ses.getAttribute("role")))) {
+	response.sendRedirect("login.jsp");
+	return;
+}
 
-    // DATA RETRIEVAL
-    List<LeaveRecord> history = (List<LeaveRecord>) request.getAttribute("history");
-    List<String> years = (List<String>) request.getAttribute("years");
-    
-    // Filtering Parameters
-    String currentStatus = request.getParameter("status") != null ? request.getParameter("status") : "ALL";
-    String currentMonth = request.getParameter("month") != null ? request.getParameter("month") : ""; // Empty = Full Year
-    String currentYear = request.getParameter("year");
-    if (currentYear == null || currentYear.isEmpty()) {
-        currentYear = String.valueOf(LocalDate.now().getYear());
-    }
+// DATA RETRIEVAL
+List<LeaveRecord> history = (List<LeaveRecord>) request.getAttribute("history");
+List<String> years = (List<String>) request.getAttribute("years");
 
-    // =========================
-    // PAGINATION LOGIC (10 Rows)
-    // =========================
-    int pageSize = 10;
-    int totalRecords = (history != null) ? history.size() : 0;
-    int currentPage = 1;
-    try {
-        if(request.getParameter("page") != null) currentPage = Integer.parseInt(request.getParameter("page"));
-    } catch(NumberFormatException e) { currentPage = 1; }
+// Filtering Parameters
+String currentStatus = request.getParameter("status") != null ? request.getParameter("status") : "ALL";
+String currentMonth = request.getParameter("month") != null ? request.getParameter("month") : "";
+String currentYear = request.getParameter("year");
+if (currentYear == null || currentYear.isEmpty()) {
+	currentYear = String.valueOf(LocalDate.now().getYear());
+}
+String currentType = request.getParameter("type") != null ? request.getParameter("type") : "ALL";
 
-    int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
-    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-    
-    int startIndex = (currentPage - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, totalRecords);
-    
-    List<LeaveRecord> paginatedList = new ArrayList<>();
-    if (history != null && !history.isEmpty() && startIndex < totalRecords) {
-        paginatedList = history.subList(startIndex, endIndex);
-    }
-    
-    Calendar cal = Calendar.getInstance();
+// ==========================================
+// IN-JSP FALLBACK TYPE FILTERING LOGIC
+// ==========================================
+if (history != null && currentType != null && !"ALL".equalsIgnoreCase(currentType)) {
+	List<LeaveRecord> filteredHistory = new ArrayList<>();
+	for (LeaveRecord r : history) {
+		String tc = (r.getTypeCode() != null) ? r.getTypeCode().trim().toUpperCase() : "";
+		if (tc.contains(currentType.toUpperCase()) || currentType.toUpperCase().contains(tc)) {
+			filteredHistory.add(r);
+		}
+	}
+	history = filteredHistory;
+}
+
+// =========================
+// PAGINATION LOGIC (10 Rows)
+// =========================
+int pageSize = 10;
+int totalRecords = (history != null) ? history.size() : 0;
+int currentPage = 1;
+try {
+	if (request.getParameter("page") != null)
+		currentPage = Integer.parseInt(request.getParameter("page"));
+} catch (NumberFormatException e) {
+	currentPage = 1;
+}
+
+int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
+if (currentPage > totalPages && totalPages > 0)
+	currentPage = totalPages;
+if (currentPage < 1)
+	currentPage = 1;
+
+int startIndex = (currentPage - 1) * pageSize;
+int endIndex = Math.min(startIndex + pageSize, totalRecords);
+
+List<LeaveRecord> paginatedList = new ArrayList<>();
+if (history != null && !history.isEmpty() && startIndex < totalRecords) {
+	paginatedList = history.subList(startIndex, endIndex);
+}
+
+Calendar cal = Calendar.getInstance();
 %>
 
 <!DOCTYPE html>
@@ -104,6 +126,7 @@ body {
 	margin: 0;
 	text-transform: uppercase;
 	color: var(--text);
+	letter-spacing: -0.02em;
 }
 
 .sub-label {
@@ -116,48 +139,48 @@ body {
 	display: block;
 }
 
+/* ✅ ENHANCED COMPACT FILTER BAR LAYOUT PREVENTING IMAGE_3215B9 OVERFLOWS */
 .filter-bar {
 	background: #fff;
 	border: 1px solid var(--border);
 	border-radius: 1.5rem;
-	padding: 20px 24px;
+	padding: 16px 24px;
 	box-shadow: var(--shadow);
 	margin-bottom: 24px;
 }
 
 .filter-group {
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	align-items: center;
+	gap: 8px; /* Tight gaps between text label and select dropdown */
 }
 
 .filter-label {
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 900;
-	color: var(--muted);
+	color: #233f66;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
-	margin-left: 4px;
+	flex-shrink: 0;
 }
 
-/* UPDATED: Filter box styling 45px height and 20px padding */
 select {
 	height: 45px !important;
-	padding: 0 20px !important;
+	padding: 0 5px !important;
 	border-radius: 12px;
-	border: 1px solid var(--border);
+	border: 2px solid var(--border);
 	outline: none;
 	font-size: 14px;
 	font-weight: 600;
 	cursor: pointer;
 	background: #fff;
 	transition: all 0.2s;
-	min-width: 180px;
+	min-width: 150px;
 }
 
 select:focus {
 	border-color: var(--blue-primary);
-	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+	box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
 }
 
 .card {
@@ -168,9 +191,11 @@ select:focus {
 	overflow: hidden;
 }
 
+/* FIXED TABLE LAYOUT FOR CONSISTENT SIZING */
 table {
 	width: 100%;
 	border-collapse: collapse;
+	table-layout: fixed;
 }
 
 th, td {
@@ -187,6 +212,33 @@ th {
 	color: var(--muted);
 	font-weight: 800;
 	letter-spacing: 0.05em;
+}
+
+/* Column Width Definitions */
+.col-emp {
+	width: 30%;
+}
+
+.col-type {
+	width: 14%;
+}
+
+.col-dates {
+	width: 16%;
+}
+
+.col-days {
+	width: 8%;
+	text-align: center;
+}
+
+.col-status {
+	width: 16%;
+}
+
+.col-action {
+	width: 16%;
+	text-align: right;
 }
 
 .badge {
@@ -230,7 +282,6 @@ th {
 	border: 1px solid #fdba74;
 }
 
-/* Pagination Styles */
 .pagination-btn {
 	padding: 8px 16px;
 	border-radius: 10px;
@@ -242,21 +293,10 @@ th {
 	background: white;
 }
 
-.pagination-btn:hover:not(:disabled) {
-	border-color: var(--blue-primary);
-	color: var(--blue-primary);
-	background: var(--blue-light);
-}
-
 .pagination-btn.active {
 	background: var(--blue-primary);
 	color: #fff;
 	border-color: var(--blue-primary);
-}
-
-.pagination-btn:disabled {
-	opacity: 0.4;
-	cursor: not-allowed;
 }
 
 .modal-overlay {
@@ -290,18 +330,11 @@ th {
 	animation: slideUp 0.3s ease;
 }
 
-@
-keyframes slideUp {
-	from {opacity: 0;
-	transform: translateY(20px);
+@keyframes slideUp {
+	from {opacity: 0; transform: translateY(20px);}
+	to {opacity: 1; transform: translateY(0);}
 }
 
-to {
-	opacity: 1;
-	transform: translateY(0);
-}
-
-}
 .modal-body {
 	overflow-y: auto;
 	padding-right: 8px;
@@ -344,12 +377,6 @@ to {
 	z-index: 10;
 }
 
-.btn-close:hover {
-	background: #fef2f2;
-	border-color: #fecaca;
-	color: #ef4444;
-}
-
 .dynamic-meta-container {
 	background: #f8fafc;
 	border: 1px solid var(--border);
@@ -374,37 +401,58 @@ to {
 					<div>
 						<h2 class="title">LEAVE HISTORY</h2>
 						<span class="sub-label"> History for All Employees
-							Application <%= currentYear %></span>
+							Application <%=currentYear%></span>
 					</div>
 					<div
-						class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-black text-slate-500 shadow-sm uppercase tracking-tighter">
+						class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-black text-slate-500 shadow-sm uppercase tracking-tighter shrink-0">
 						Total Records:
-						<%= totalRecords %>
+						<%=totalRecords%>
 					</div>
 				</div>
 
-				<!-- Automatic Filter Form -->
+				<!-- Form utilizing clean, responsive inline-flex grouping -->
 				<form id="filterForm" action="leaveEmpHistory" method="get"
-					class="filter-bar flex flex-wrap items-center gap-6">
+					class="filter-bar flex flex-wrap items-center gap-x-6 gap-y-4">
 					<input type="hidden" name="page" value="1">
 
 					<div class="filter-group">
 						<span class="filter-label">Status</span> <select name="status"
 							onchange="this.form.submit()">
 							<option value="ALL"
-								<%= "ALL".equals(currentStatus)?"selected":"" %>>All
+								<%="ALL".equals(currentStatus) ? "selected" : ""%>>All
 								Statuses</option>
 							<option value="PENDING"
-								<%= "PENDING".equals(currentStatus)?"selected":"" %>>Pending</option>
+								<%="PENDING".equals(currentStatus) ? "selected" : ""%>>Pending</option>
 							<option value="APPROVED"
-								<%= "APPROVED".equals(currentStatus)?"selected":"" %>>Approved</option>
+								<%="APPROVED".equals(currentStatus) ? "selected" : ""%>>Approved</option>
 							<option value="REJECTED"
-								<%= "REJECTED".equals(currentStatus)?"selected":"" %>>Rejected</option>
+								<%="REJECTED".equals(currentStatus) ? "selected" : ""%>>Rejected</option>
 							<option value="CANCELLED"
-								<%= "CANCELLED".equals(currentStatus)?"selected":"" %>>Cancelled</option>
+								<%="CANCELLED".equals(currentStatus) ? "selected" : ""%>>Cancelled</option>
 							<option value="CANCELLATION_REQUESTED"
-								<%= "CANCELLATION_REQUESTED".equals(currentStatus)?"selected":"" %>>Request
+								<%="CANCELLATION_REQUESTED".equals(currentStatus) ? "selected" : ""%>>Request
 								Cancellation</option>
+						</select>
+					</div>
+
+					<!-- DYNAMIC LEAVE TYPE FILTER DROPDOWN -->
+					<div class="filter-group">
+						<span class="filter-label">Leave Type</span> <select name="type"
+							onchange="this.form.submit()">
+							<option value="ALL"
+								<%="ALL".equals(currentType) ? "selected" : ""%>>All Leave Types</option>
+							<option value="ANNUAL LEAVE"
+								<%="ANNUAL LEAVE".equals(currentType) ? "selected" : ""%>>Annual Leave</option>
+							<option value="SICK LEAVE"
+								<%="SICK LEAVE".equals(currentType) ? "selected" : ""%>>Sick Leave</option>
+							<option value="EMERGENCY LEAVE"
+								<%="EMERGENCY LEAVE".equals(currentType) ? "selected" : ""%>>Emergency Leave</option>
+							<option value="HOSPITALIZATION"
+								<%="HOSPITALIZATION".equals(currentType) ? "selected" : ""%>>Hospitalization</option>
+							<option value="MATERNITY LEAVE"
+								<%="MATERNITY LEAVE".equals(currentType) ? "selected" : ""%>>Maternity Leave</option>
+							<option value="PATERNITY LEAVE"
+								<%="PATERNITY LEAVE".equals(currentType) ? "selected" : ""%>>Paternity Leave</option>
 						</select>
 					</div>
 
@@ -412,118 +460,162 @@ to {
 						<span class="filter-label">Month</span> <select name="month"
 							onchange="this.form.submit()">
 							<option value="">Full Year</option>
-							<% for(int m=1; m<=12; m++) { 
-                            String mVal = String.format("%02d", m);
-                            String mName = Month.of(m).getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-                        %>
+							<%
+							for (int m = 1; m <= 12; m++) {
+								String mVal = String.format("%02d", m);
+								String mName = Month.of(m).getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+							%>
 							<option value="<%=mVal%>"
-								<%= mVal.equals(currentMonth)?"selected":"" %>><%=mName%></option>
-							<% } %>
+								<%=mVal.equals(currentMonth) ? "selected" : ""%>><%=mName%></option>
+							<%
+							}
+							%>
 						</select>
 					</div>
 
 					<div class="filter-group">
 						<span class="filter-label">Year</span> <select name="year"
 							onchange="this.form.submit()">
-							<% if(years != null) { for(String yr : years) { %>
+							<%
+							if (years != null) {
+								for (String yr : years) {
+							%>
 							<option value="<%=yr%>"
-								<%= yr.equals(currentYear)?"selected":"" %>><%=yr%></option>
-							<% } } %>
+								<%=yr.equals(currentYear) ? "selected" : ""%>><%=yr%></option>
+							<%
+							}
+							}
+							%>
 						</select>
 					</div>
 				</form>
 
 				<div class="card">
 					<div class="overflow-x-auto">
-						<table>
+						<!-- min-width added here to enable scroll on small screens while keeping layout dynamic -->
+						<table style="min-width: 900px;">
 							<thead>
 								<tr>
-									<th>Staff Member</th>
-									<th>Type</th>
-									<th>Dates</th>
-									<th>Days</th>
-									<th>Status</th>
-									<th style="text-align: right">Action</th>
+									<th class="col-emp">Staff Member</th>
+									<th class="col-type">Type</th>
+									<th class="col-dates">Dates</th>
+									<th class="col-days">Days</th>
+									<th class="col-status">Status</th>
+									<th class="col-action">Action</th>
 								</tr>
 							</thead>
 							<tbody>
-								<% if (paginatedList.isEmpty()) { %>
+								<%
+								if (paginatedList.isEmpty()) {
+								%>
 								<tr>
 									<td colspan="6"
 										class="text-center py-24 text-slate-300 font-bold uppercase text-xs italic tracking-widest">No
 										matching history records found.</td>
 								</tr>
-								<% } else { for (LeaveRecord r : paginatedList) { 
-                                String status = r.getStatusCode();
-                                String badgeClass = "status-pending";
-                                if ("APPROVED".equalsIgnoreCase(status)) badgeClass = "status-approved";
-                                else if ("REJECTED".equalsIgnoreCase(status)) badgeClass = "status-rejected";
-                                else if ("CANCELLED".equalsIgnoreCase(status)) badgeClass = "status-cancelled";
-                                else if ("CANCELLATION_REQUESTED".equalsIgnoreCase(status)) badgeClass = "status-cancellation-requested";
+								<%
+								} else {
+								for (LeaveRecord r : paginatedList) {
+									String status = r.getStatusCode();
+									String badgeClass = "status-pending";
+									if ("APPROVED".equalsIgnoreCase(status))
+										badgeClass = "status-approved";
+									else if ("REJECTED".equalsIgnoreCase(status))
+										badgeClass = "status-rejected";
+									else if ("CANCELLED".equalsIgnoreCase(status))
+										badgeClass = "status-cancelled";
+									else if ("CANCELLATION_REQUESTED".equalsIgnoreCase(status))
+										badgeClass = "status-cancellation-requested";
 
-                                String joinYear = "0000";
-                                if(r.getHireDate() != null) { cal.setTime(r.getHireDate()); joinYear = String.valueOf(cal.get(Calendar.YEAR)); }
-                                String displayEmpId = "EMP-" + joinYear + "-" + String.format("%02d", r.getEmpId());
-                            %>
+									String joinYear = "0000";
+									if (r.getHireDate() != null) {
+										cal.setTime(r.getHireDate());
+										joinYear = String.valueOf(cal.get(Calendar.YEAR));
+									}
+									String displayEmpId = "EMP-" + joinYear + "-" + String.format("%02d", r.getEmpId());
+								%>
 								<tr class="hover:bg-slate-50/50 transition-colors">
-									<td>
+									<td class="col-emp">
 										<div class="flex items-center gap-3">
 											<div
 												class="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200 flex items-center justify-center">
-												<% if (r.getProfilePic() != null && !r.getProfilePic().isEmpty()) { %>
+												<%
+												if (r.getProfilePic() != null && !r.getProfilePic().isEmpty()) {
+												%>
 												<img
-													src="<%= request.getContextPath() + "/" + r.getProfilePic() %>"
+													src="<%=request.getContextPath() + "/" + r.getProfilePic()%>"
 													class="w-full h-full object-cover">
-												<% } else { %>
+												<%
+												} else {
+												%>
 												<div class="text-slate-400 font-bold text-xs uppercase">
-													<%= (r.getFullName() != null) ? r.getFullName().substring(0,1) : "?" %>
+													<%=(r.getFullName() != null) ? r.getFullName().substring(0, 1) : "?"%>
 												</div>
-												<% } %>
+												<%
+												}
+												%>
 											</div>
-											<div>
-												<div class="font-bold text-slate-800 text-sm uppercase"><%= r.getFullName() %></div>
+											<div class="overflow-hidden">
 												<div
-													class="text-[10px] text-blue-600 font-bold uppercase tracking-tighter"><%= displayEmpId %></div>
+													class="font-bold text-slate-800 text-sm uppercase leading-tight break-words pr-2"><%=r.getFullName()%></div>
+												<div
+													class="text-[10px] text-blue-600 font-bold uppercase tracking-tighter"><%=displayEmpId%></div>
 											</div>
 										</div>
 									</td>
-									<td><span
-										class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase border border-slate-200"><%= r.getTypeCode() %></span></td>
-									<td class="text-xs font-semibold text-slate-600"><%= r.getStartDate() %>
-										— <%= r.getEndDate() %></td>
-									<td class="font-bold text-slate-800 text-sm"><%= r.getDurationDays() %></td>
-									<td><span class="badge <%= badgeClass %>"> <span
-											class="w-1.5 h-1.5 rounded-full bg-current"></span> <%= (status != null) ? status.replace("_", " ") : "UNKNOWN" %>
+									<td class="col-type"><span
+										class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase border border-slate-200"><%=r.getTypeCode()%></span></td>
+
+									<!-- FIX: Table column date fixed with vertical layout centered as per image_9b979a.png -->
+									<td class="col-dates">
+										<div
+											class="flex flex-col items-center justify-center text-center">
+											<span
+												class="text-[12px] text-slate-700 font-bold uppercase tracking-tight"><%=r.getStartDate()%></span>
+											<span
+												class="text-[12px] text-slate-700 font-bold uppercase tracking-tight py-0.5">to</span>
+											<span
+												class="text-[12px] text-slate-700 font-bold uppercase tracking-tight"><%=r.getEndDate()%></span>
+										</div>
+									</td>
+
+									<td class="col-days font-bold text-slate-800 text-sm"><%=r.getDurationDays()%></td>
+									<td class="col-status"><span
+										class="badge <%=badgeClass%>"> <span
+											class="w-1.5 h-1.5 rounded-full bg-current"></span> <%=(status != null) ? status.replace("_", " ") : "UNKNOWN"%>
 									</span></td>
-									<td style="text-align: right">
+									<td class="col-action">
 										<button onclick="viewDetails(this)"
 											class="bg-white border border-slate-200 text-slate-600 px-5 py-2 rounded-xl text-[10px] font-black hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest shadow-sm flex items-center gap-2 ml-auto"
-											data-id="<%= r.getLeaveId() %>"
-											data-name="<%= r.getFullName() %>"
-											data-idcode="<%= displayEmpId %>"
-											data-type="<%= r.getTypeCode() %>"
-											data-start="<%= r.getStartDate() %>"
-											data-end="<%= r.getEndDate() %>"
-											data-days="<%= r.getDurationDays() %>"
-											data-duration="<%= r.getDuration() %>"
-											data-applied="<%= r.getAppliedOn() %>"
-											data-reason="<%= r.getReason() %>"
-											data-attachment="<%= r.getAttachment() != null ? r.getAttachment() : "" %>"
-											data-med="<%= r.getMedicalFacility() %>"
-											data-ref="<%= r.getRefSerialNo() %>"
-											data-pre="<%= r.getWeekPregnancy() %>"
-											data-evt="<%= r.getEventDate() %>"
-											data-dis="<%= r.getDischargeDate() %>"
-											data-cat="<%= r.getEmergencyCategory() %>"
-											data-cnt="<%= r.getEmergencyContact() %>"
-											data-spo="<%= r.getSpouseName() %>"
-											data-comment="<%= r.getManagerComment() != null ? r.getManagerComment() : "-" %>">
-											<%= EyeIcon("w-3.5 h-3.5") %>
+											data-id="<%=r.getLeaveId()%>"
+											data-name="<%=r.getFullName()%>"
+											data-idcode="<%=displayEmpId%>"
+											data-type="<%=r.getTypeCode()%>"
+											data-start="<%=r.getStartDate()%>"
+											data-end="<%=r.getEndDate()%>"
+											data-days="<%=r.getDurationDays()%>"
+											data-duration="<%=r.getDuration()%>"
+											data-applied="<%=r.getAppliedOn()%>"
+											data-reason="<%=r.getReason()%>"
+											data-attachment="<%=r.getAttachment() != null ? r.getAttachment() : ""%>"
+											data-med="<%=r.getMedicalFacility()%>"
+											data-ref="<%=r.getRefSerialNo()%>"
+											data-pre="<%=r.getWeekPregnancy()%>"
+											data-evt="<%=r.getEventDate()%>"
+											data-dis="<%=r.getDischargeDate()%>"
+											data-cat="<%=r.getEmergencyCategory()%>"
+											data-cnt="<%=r.getEmergencyContact()%>"
+											data-spo="<%=r.getSpouseName()%>"
+											data-comment="<%=r.getManagerComment() != null ? r.getManagerComment() : "-"%>">
+											<%=EyeIcon("w-3.5 h-3.5")%>
 											View
 										</button>
 									</td>
 								</tr>
-								<% } } %>
+								<%
+								}
+								}
+								%>
 							</tbody>
 						</table>
 					</div>
@@ -534,44 +626,52 @@ to {
 						<div
 							class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
 							Showing
-							<%= totalRecords == 0 ? 0 : startIndex + 1 %>
+							<%=totalRecords == 0 ? 0 : startIndex + 1%>
 							to
-							<%= endIndex %>
+							<%=endIndex%>
 							of
-							<%= totalRecords %>
+							<%=totalRecords%>
 							entries
 						</div>
 
-						<% if (totalPages > 1) { %>
+						<%
+						if (totalPages > 1) {
+						%>
 						<div class="flex items-center gap-2">
 							<button type="button" class="pagination-btn"
-								onclick="goToPage(<%= currentPage - 1 %>)"
-								<%= currentPage == 1 ? "disabled" : "" %>>
+								onclick="goToPage(<%=currentPage - 1%>)"
+								<%=currentPage == 1 ? "disabled" : ""%>>
 								<i class="fas fa-chevron-left mr-1"></i> Prev
 							</button>
 
-							<% for(int p=1; p<=totalPages; p++) { %>
+							<%
+							for (int p = 1; p <= totalPages; p++) {
+							%>
 							<button type="button"
-								class="pagination-btn <%= p == currentPage ? "active" : "" %>"
-								onclick="goToPage(<%= p %>)">
-								<%= p %>
+								class="pagination-btn <%=p == currentPage ? "active" : ""%>"
+								onclick="goToPage(<%=p%>)">
+								<%=p%>
 							</button>
-							<% } %>
+							<%
+							}
+							%>
 
 							<button type="button" class="pagination-btn"
-								onclick="goToPage(<%= currentPage + 1 %>)"
-								<%= currentPage == totalPages ? "disabled" : "" %>>
+								onclick="goToPage(<%=currentPage + 1%>)"
+								<%=currentPage == totalPages ? "disabled" : ""%>>
 								Next <i class="fas fa-chevron-right ml-1"></i>
 							</button>
 						</div>
-						<% } %>
+						<%
+						}
+						%>
 					</div>
 				</div>
 			</div>
 		</main>
 	</div>
 
-	<!-- POPUP MODAL (UNCHANGED LOGIC) -->
+	<!-- POPUP MODAL -->
 	<div class="modal-overlay" id="detailModal">
 		<div class="modal-content">
 			<button type="button" class="btn-close" onclick="closeModal()">
@@ -655,8 +755,8 @@ to {
 					<div class="flex items-center gap-3 mb-4">
 						<div class="w-1 h-4 bg-blue-600 rounded-full"></div>
 						<h4
-							class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Metadata
-							Attributes (Specific To Type)</h4>
+							class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Additional
+							Information</h4>
 					</div>
 					<div class="dynamic-meta-container space-y-4" id="dynamicGrid"></div>
 				</div>
@@ -673,7 +773,6 @@ to {
 	<script>
     const CTX = "<%=request.getContextPath()%>";
 
-    // Auto-Dismiss Messages
     window.onload = function() {
         const msg = document.getElementById('statusAlert');
         if (msg) {
@@ -701,12 +800,12 @@ to {
         document.getElementById('popDays').textContent = d.days;
         document.getElementById('popApplied').textContent = d.applied;
         document.getElementById('popReason').textContent = d.reason || "No reason provided.";
-        document.getElementById('popComment').textContent = d.comment && d.comment !== "-" ? d.comment : "No remarks available.";
+        document.getElementById('popComment').textContent = d.comment && d.comment !== "-" ? d.comment : "No remarks available";
 
         const abox = document.getElementById('attachBox');
         const noAttach = document.getElementById('noAttachLabel');
         if(d.attachment && d.attachment !== "" && d.attachment !== "null") {
-            abox.classList.remove('hidden');
+            box.classList.remove('hidden');
             noAttach.classList.add('hidden');
             document.getElementById('modalAttachLink').href = CTX + "/ViewAttachment?id=" + d.id;
         } else { 
@@ -714,44 +813,34 @@ to {
             noAttach.classList.remove('hidden');
         }
 
-        const dBox = document.getElementById('dynamicBox');
         const grid = document.getElementById('dynamicGrid');
         grid.innerHTML = "";
         let count = 0;
         
         const addAttr = (label, val) => {
             if(val && val !== "null" && val !== "" && val !== "undefined" && val !== "N/A" && val !== "0") {
-                grid.innerHTML += '<div class="info-item border-b border-slate-100 pb-2 flex justify-between items-center"><span class="info-label text-slate-400 mb-0">'+label+'</span><span class="info-value mb-0 text-slate-600 font-bold uppercase text-[11px]">'+val+'</span></div>';
+                grid.innerHTML += '<div class="info-item border-b border-slate-100 pb-2 flex justify-between items-center"><span class="info-label text-slate-400 mb-0 font-bold uppercase" style="font-size:9px;">'+label+'</span><span class="info-value mb-0 text-slate-600 font-bold uppercase text-[11px]">'+val+'</span></div>';
                 count++;
             }
         };
 
         const code = (d.type || "").toUpperCase();
-        if (code.includes("SICK")) 
-        { 
+        if (code.includes("SICK")) { 
         	addAttr("Clinic Name ", d.med); 
        		addAttr("MC Serial No", d.ref); 
-        }
-        else if (code.includes("HOSPITAL")) 
-        { 
+        } else if (code.includes("HOSPITAL")) { 
         	addAttr("Hospital Name", d.med); 
         	addAttr("Admit Date", d.evt); 
         	addAttr("Discharge Date", d.dis); 
-        	}
-        else if (code.includes("MATERNITY")) 
-        { 
+        } else if (code.includes("MATERNITY")) { 
         	addAttr("Consulation Clinic ", d.med); 
             addAttr("Expected Due Date", d.evt); 
             addAttr("Week Pregenancy", d.pre); 
-        }
-        else if (code.includes("PATERNITY")) 
-        { 
+        } else if (code.includes("PATERNITY")) { 
         	addAttr("Spouse Name", d.spo); 
             addAttr("Medical Location ", d.med); 
             addAttr("Date of Birth", d.evt); 
-        }
-        else if (code.includes("EMERGENCY")) 
-        { 
+        } else if (code.includes("EMERGENCY")) { 
         	addAttr("Emergency Category", d.cat); 
             addAttr("Emergency Contact", d.cnt); 
         }

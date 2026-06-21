@@ -9,13 +9,95 @@ import java.util.List;
 
 /**
  * ManagerDAO handles fetching pending requests and processing manager actions.
- * Optimized with explicit aliasing and case-insensitive type checking to fix
- * Emergency Leave issues.
+ * Optimized with explicit aliasing, case-insensitive type checking, and 
+ * transactional auto-cancellation for expired leave requests.
  */
 public class ManagerDAO {
 
 	private final SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy");
 	private final SimpleDateFormat sdfTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+	/**
+	 * Scans the database for PENDING or CANCELLATION_REQUESTED leave requests 
+	 * where the start date has passed by more than 1 day (TRUNC(SYSDATE) > TRUNC(START_DATE) + 1).
+	 * If any are found, updates their status to 'CANCELLED' and refunds the leave balances.
+	 */
+	public void autoCancelExpiredLeaves() throws Exception {
+		// 1. Query to locate expired, unprocessed applications
+		String selectSql = "SELECT lr.LEAVE_ID, lr.EMPID, lr.LEAVE_TYPE_ID, lr.DURATION_DAYS, ls.STATUS_CODE "
+				+ "FROM LEAVE_REQUESTS lr "
+				+ "JOIN LEAVE_STATUSES ls ON lr.STATUS_ID = ls.STATUS_ID "
+				+ "WHERE ls.STATUS_CODE IN ('PENDING', 'CANCELLATION_REQUESTED') "
+				+ "AND TRUNC(SYSDATE) > TRUNC(lr.START_DATE) + 1";
+
+		// 2. Query to transition the status code to CANCELLED (using existing status to avoid ORA errors)
+		String updateRequestSql = "UPDATE LEAVE_REQUESTS "
+				+ "SET STATUS_ID = (SELECT STATUS_ID FROM LEAVE_STATUSES WHERE STATUS_CODE = 'CANCELLED'), "
+				+ "MANAGER_COMMENT = 'SYSTEM AUTO-CANCELLED: EXPIRED' "
+				+ "WHERE LEAVE_ID = ?";
+
+		// 3. Balance refund query for expired PENDING applications (Restores PENDING to TOTAL)
+		String refundPendingSql = "UPDATE LEAVE_BALANCES "
+				+ "SET PENDING = PENDING - ?, TOTAL = TOTAL + ? "
+				+ "WHERE EMPID = ? AND LEAVE_TYPE_ID = ?";
+
+		// 4. Balance refund query for expired CANCELLATION_REQUESTED applications (Restores USED to TOTAL)
+		String refundCancelSql = "UPDATE LEAVE_BALANCES "
+				+ "SET USED = USED - ?, TOTAL = TOTAL + ? "
+				+ "WHERE EMPID = ? AND LEAVE_TYPE_ID = ?";
+
+		try (Connection con = DatabaseConnection.getConnection()) {
+			con.setAutoCommit(false); // Begin Transaction block
+			try {
+				List<ExpiredRecord> expiredList = new ArrayList<>();
+				try (PreparedStatement ps = con.prepareStatement(selectSql);
+						ResultSet rs = ps.executeQuery()) {
+					while (rs.next()) {
+						ExpiredRecord rec = new ExpiredRecord();
+						rec.leaveId = rs.getInt("LEAVE_ID");
+						rec.empId = rs.getInt("EMPID");
+						rec.leaveTypeId = rs.getInt("LEAVE_TYPE_ID");
+						rec.durationDays = rs.getDouble("DURATION_DAYS");
+						rec.statusCode = rs.getString("STATUS_CODE");
+						expiredList.add(rec);
+					}
+				}
+
+				for (ExpiredRecord rec : expiredList) {
+					// Step A: Update the request status to CANCELLED
+					try (PreparedStatement psUpdate = con.prepareStatement(updateRequestSql)) {
+						psUpdate.setInt(1, rec.leaveId);
+						psUpdate.executeUpdate();
+					}
+
+					// Step B: Refund employee leave balance based on original request status
+					if ("PENDING".equalsIgnoreCase(rec.statusCode)) {
+						try (PreparedStatement psRefund = con.prepareStatement(refundPendingSql)) {
+							psRefund.setDouble(1, rec.durationDays);
+							psRefund.setDouble(2, rec.durationDays);
+							psRefund.setInt(3, rec.empId);
+							psRefund.setInt(4, rec.leaveTypeId);
+							psRefund.executeUpdate();
+						}
+					} else if ("CANCELLATION_REQUESTED".equalsIgnoreCase(rec.statusCode)) {
+						try (PreparedStatement psRefund = con.prepareStatement(refundCancelSql)) {
+							psRefund.setDouble(1, rec.durationDays);
+							psRefund.setDouble(2, rec.durationDays);
+							psRefund.setInt(3, rec.empId);
+							psRefund.setInt(4, rec.leaveTypeId);
+							psRefund.executeUpdate();
+						}
+					}
+				}
+				con.commit(); // Transaction success: commit all updates safely
+			} catch (Exception e) {
+				con.rollback(); // Transaction fail: rollback to keep balance integrity
+				throw e;
+			} finally {
+				con.setAutoCommit(true);
+			}
+		}
+	}
 
 	public List<LeaveRecord> getRequestsForReview() throws Exception {
 		List<LeaveRecord> list = new ArrayList<>();
@@ -172,5 +254,17 @@ public class ManagerDAO {
 				con.setAutoCommit(true);
 			}
 		}
+	}
+
+	/**
+	 * Helper class to encapsulate expired leave attributes inside 
+	 * transactional iterations.
+	 */
+	private static class ExpiredRecord {
+		int leaveId;
+		int empId;
+		int leaveTypeId;
+		double durationDays;
+		String statusCode;
 	}
 }

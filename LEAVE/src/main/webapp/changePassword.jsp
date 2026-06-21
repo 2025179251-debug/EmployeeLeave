@@ -4,7 +4,7 @@
 
 <%
 if (session.getAttribute("empid") == null) {
-	response.sendRedirect("login.jsp?error=Please login.");
+	response.sendRedirect("login.jsp?error=Please+login.");
 	return;
 }
 %>
@@ -77,9 +77,9 @@ body {
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-	overflow: hidden;
+	overflow: visible; /* Changed to visible to let password requirement tooltip overlap nicely if needed */
 	margin-top: 24px;
-	max-width: 500px;
+	max-width: 550px;
 }
 
 .label-xs {
@@ -95,9 +95,9 @@ body {
 /* THE FIX: Specificity override for Tailwind Reset */
 .pageWrap input {
 	width: 100% !important;
-	padding: 0 18px !important; /* Horizontal gap fix */
+	padding: 0 54px 0 18px !important; /* Leaves room for eye icons on the right */
 	height: 52px !important;
-	border: 1.5px solid #e2e8f0 !important;
+	border: 2px solid #cbd5e1 !important;
 	border-radius: 12px !important;
 	font-size: 14px !important;
 	font-weight: 600 !important;
@@ -117,6 +117,12 @@ body {
 .pageWrap input:focus {
 	border-color: var(--blue) !important;
 	box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* Invalid form field borders */
+.pageWrap input.invalid-field {
+	border-color: #ef4444 !important;
+	background-color: #fff1f2 !important;
 }
 
 .btn-blue {
@@ -156,8 +162,34 @@ body {
 }
 
 .icon-sm {
-	width: 16px;
-	height: 16px;
+	width: 20px;
+	height: 20px;
+}
+
+/* Password strength elements */
+.strength-bar-container {
+	height: 6px;
+	background: #f1f5f9;
+	border-radius: 3px;
+	overflow: hidden;
+	margin-top: 8px;
+}
+
+.strength-bar {
+	height: 100%;
+	width: 0%;
+	transition: all 0.3s ease-in-out;
+}
+
+/* Shaking animation for validation triggers */
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	20%, 60% { transform: translateX(-6px); }
+	40%, 80% { transform: translateX(6px); }
+}
+
+.shake-it {
+	animation: shake 0.4s ease-in-out;
 }
 </style>
 </head>
@@ -176,14 +208,20 @@ body {
 					unique password</span>
 			</div>
 
-			<div class="card">
+			<div class="card" id="formCard">
 				<div class="px-8 py-4 border-b border-slate-50 bg-slate-50/30">
 					<span
 						class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Security
 						Credentials</span>
 				</div>
 
-				<form action="ChangePassword" method="post" class="p-8 space-y-6">
+				<form action="ChangePassword" method="post" class="p-8 space-y-6" id="passwordForm" onsubmit="return validateForm(event)">
+
+					<!-- JS Dynamic Error Notice Bar (Replacing alerts) -->
+					<div id="jsErrorAlert" class="msg-box bg-red-50 text-red-600 border border-red-100 hidden">
+						<%=AlertIcon("icon-sm")%>
+						<span id="jsErrorText"></span>
+					</div>
 
 					<c:if test="${not empty param.error}">
 						<div id="statusAlert"
@@ -200,42 +238,121 @@ body {
 						</div>
 					</c:if>
 
+					<!-- Old/Current Password Field -->
 					<div class="space-y-2">
-						<span class="label-xs">Current Password</span> <input
-							type="password" name="oldPassword" required
-							placeholder="Enter current password">
+						<span class="label-xs">Current Password</span> 
+						<div class="relative">
+							<input type="password" name="oldPassword" id="oldPassword" required
+								placeholder="Enter current password" oninput="this.classList.remove('invalid-field')">
+							<button type="button" onclick="togglePassword('oldPassword')"
+								class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
+								<span class="show-eye">
+									<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+										<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+									</svg>
+								</span>
+								<span class="hide-eye hidden">
+									<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.476 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+									</svg>
+								</span>
+							</button>
+						</div>
 					</div>
 
-					<div class="pt-4 border-t border-slate-100 space-y-6">
+					<!-- New Password Field with dynamic tooltip and strength bar -->
+					<div class="pt-4 border-t border-slate-100 space-y-4 relative">
 						<div class="space-y-2">
 							<span class="label-xs">New Password</span>
 							<div class="relative">
 								<input type="password" id="newPassword" name="newPassword"
-									required placeholder="Enter strong new password">
+									required placeholder="Enter strong new password" oninput="checkPasswordRequirements(this)">
 								<button type="button" onclick="togglePassword('newPassword')"
 									class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
-									<%=EyeIcon("icon-sm")%>
+									<span class="show-eye">
+										<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+										</svg>
+									</span>
+									<span class="hide-eye hidden">
+										<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.476 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+										</svg>
+									</span>
 								</button>
+							</div>
+							
+							<!-- Dynamic Strength Bar indicators beneath field -->
+							<div class="flex items-center justify-between mt-2">
+								<div class="flex-1 mr-3">
+									<div class="strength-bar-container">
+										<div id="strengthProgress" class="strength-bar"></div>
+									</div>
+								</div>
+								<span id="strengthText" class="text-[10px] font-black uppercase text-slate-400">NONE</span>
 							</div>
 						</div>
 
+						<!-- PREMIUM TOOLTIP CHECKLIST - Styled exactly as image_27a898.png & image_27a115.png -->
+						<div id="requirementsTooltip" class="bg-white border border-slate-200 rounded-2xl shadow-xl p-5 w-full mt-4 space-y-3 transition-all duration-300 hidden">
+							<span class="text-xs font-bold text-slate-700 block mb-1">PASSWORD MUST INCLUDE:</span>
+							<ul class="space-y-2 text-xs">
+								<li id="reqLength" class="flex items-center gap-2 font-semibold text-red-500">
+									<span class="req-icon text-sm">✕</span>
+									<span>8-20 Characters</span>
+								</li>
+								<li id="reqCapital" class="flex items-center gap-2 font-semibold text-red-500">
+									<span class="req-icon text-sm">✕</span>
+									<span>At least one capital letter</span>
+								</li>
+								<li id="reqNumber" class="flex items-center gap-2 font-semibold text-red-500">
+									<span class="req-icon text-sm">✕</span>
+									<span>At least one number</span>
+								</li>
+								<li id="reqSymbol" class="flex items-center gap-2 font-semibold text-red-500">
+									<span class="req-icon text-sm">✕</span>
+									<span>At least one symbol</span>
+								</li>
+							</ul>
+						</div>
+
+						<!-- Confirm Password Field -->
 						<div class="space-y-2">
 							<span class="label-xs">Confirm New Password</span>
 							<div class="relative">
 								<input type="password" id="confirmPassword"
 									name="confirmPassword" required
-									placeholder="Repeat new password">
-								<button type="button"
-									onclick="togglePassword('confirmPassword')"
-									class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
-									<%=EyeIcon("icon-sm")%>
-								</button>
+									placeholder="Repeat new password" oninput="checkMatch()">
+								
+								<!-- Dynamic Mismatch / Toggle Password Buttons container -->
+								<div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+									<!-- Red invalid indicator cross icon shown on mismatch as in image_27a115.png -->
+									<span id="confirmErrorIcon" class="text-red-500 hidden" title="Passwords do not match">
+										<%= XCircleIcon("icon-sm") %>
+									</span>
+									<button type="button" id="confirmEyeBtn" onclick="togglePassword('confirmPassword')"
+										class="text-slate-400 hover:text-blue-600 transition-colors">
+										<span class="show-eye">
+											<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+												<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+											</svg>
+										</span>
+										<span class="hide-eye hidden">
+											<svg class="icon-sm" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.476 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+											</svg>
+										</span>
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
 
 					<div class="pt-4">
-						<button type="submit"
+						<button type="submit" id="submitBtn"
 							class="btn-blue shadow-lg shadow-blue-500/20">
 							<%=LockIcon("icon-sm")%>
 							Update Password
@@ -250,36 +367,199 @@ body {
 	</main>
 
 	<script>
+	// Flag states tracking requirement validity
+	let hasMinLength = false;
+	let hasCapital = false;
+	let hasNumber = false;
+	let hasSymbol = false;
 
-function validateForm(event) {
-    const oldPass = document.getElementsByName('oldPassword')[0].value;
-    const newPass = document.getElementsByName('newPassword')[0].value;
-    const confirmPass = document.getElementsByName('confirmPassword')[0].value;
+	// Checks password parameters against rules to produce image_27a898.png state
+	function checkPasswordRequirements(input) {
+		const val = input.value;
+		const tooltip = document.getElementById('requirementsTooltip');
 
-    if (newPass === oldPass) {
-        alert("NEW PASSWORD CANNOT BE THE SAME AS CURRENT PASSWORD!");
-        event.preventDefault(); // Berhenti daripada hantar borang
-        return false;
-    }
-    
-    if (newPass !== confirmPass) {
-        alert("NEW PASSWORDS DO NOT MATCH!");
-        event.preventDefault();
-        return false;
-    }
-    return true;
-}
-    // Fungsi untuk Show/Hide Password sahaja
+		// 1. Length check: 8-20 Characters
+		hasMinLength = val.length >= 8 && val.length <= 20;
+		updateRuleUI('reqLength', hasMinLength);
+
+		// 2. Capital Letter Check: At least one uppercase character
+		hasCapital = /[A-Z]/.test(val);
+		updateRuleUI('reqCapital', hasCapital);
+
+		// 3. Number check: At least one integer digit
+		hasNumber = /[0-9]/.test(val);
+		updateRuleUI('reqNumber', hasNumber);
+
+		// 4. Symbol check: At least one symbol character
+		hasSymbol = /[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\';`\/~]/.test(val);
+		updateRuleUI('reqSymbol', hasSymbol);
+
+		// ✅ REQUIREMENTS COLLAPSE CRITERIA: Tooltip is hidden if password is empty OR meets all 4 rules
+		const allMet = hasMinLength && hasCapital && hasNumber && hasSymbol;
+		if (val.length === 0 || allMet) {
+			tooltip.classList.add('hidden');
+		} else {
+			tooltip.classList.remove('hidden');
+		}
+
+		// Dynamic strength status assessment
+		let passedRules = 0;
+		if (hasMinLength) passedRules++;
+		if (hasCapital) passedRules++;
+		if (hasNumber) passedRules++;
+		if (hasSymbol) passedRules++;
+
+		const progressBar = document.getElementById('strengthProgress');
+		const progressText = document.getElementById('strengthText');
+
+		if (val.length === 0) {
+			progressBar.style.width = '0%';
+			progressBar.style.backgroundColor = '#f1f5f9';
+			progressText.textContent = 'NONE';
+			progressText.className = 'text-[10px] font-black uppercase text-slate-400';
+		} else if (passedRules < 2) {
+			progressBar.style.width = '33%';
+			progressBar.style.backgroundColor = '#ef4444'; // Red
+			progressText.textContent = 'WEAK';
+			progressText.className = 'text-[10px] font-black uppercase text-red-500';
+		} else if (passedRules < 4) {
+			progressBar.style.width = '66%';
+			progressBar.style.backgroundColor = '#f59e0b'; // Yellow (Medium as per image)
+			progressText.textContent = 'MEDIUM';
+			progressText.className = 'text-[10px] font-black uppercase text-amber-500';
+		} else {
+			progressBar.style.width = '100%';
+			progressBar.style.backgroundColor = '#10b981'; // Green
+			progressText.textContent = 'STRONG';
+			progressText.className = 'text-[10px] font-black uppercase text-emerald-500';
+		}
+
+		checkMatch();
+	}
+
+	function updateRuleUI(elementId, isPassed) {
+		const element = document.getElementById(elementId);
+		if (!element) return;
+		const icon = element.querySelector('.req-icon');
+
+		if (isPassed) {
+			element.className = 'flex items-center gap-2 font-semibold text-emerald-600';
+			icon.innerHTML = '✓';
+		} else {
+			element.className = 'flex items-center gap-2 font-semibold text-red-500';
+			icon.innerHTML = '✕';
+		}
+	}
+
+	function checkMatch() {
+		const newPass = document.getElementById('newPassword').value;
+		const confirmPass = document.getElementById('confirmPassword').value;
+		const confirmInput = document.getElementById('confirmPassword');
+		const errorIcon = document.getElementById('confirmErrorIcon');
+
+		if (confirmPass.length > 0) {
+			if (newPass === confirmPass) {
+				confirmInput.classList.remove('invalid-field');
+				errorIcon.classList.add('hidden');
+			} else {
+				// ✅ MISMATCH STYLING MATCHES image_27a115.png
+				confirmInput.classList.add('invalid-field');
+				errorIcon.classList.remove('hidden');
+			}
+		} else {
+			confirmInput.classList.remove('invalid-field');
+			errorIcon.classList.add('hidden');
+		}
+	}
+
+	// Dynamic validateForm block checks fields without system popup windows
+	function validateForm(event) {
+		const oldPass = document.getElementById('oldPassword').value;
+		const newPass = document.getElementById('newPassword').value;
+		const confirmPass = document.getElementById('confirmPassword').value;
+		
+		const alertBox = document.getElementById('jsErrorAlert');
+		const alertText = document.getElementById('jsErrorText');
+		const card = document.getElementById('formCard');
+
+		let isValid = true;
+		let errorMessage = "";
+
+		// Check Old Password Mismatch with New Password
+		if (newPass === oldPass && oldPass.length > 0) {
+			errorMessage = "NEW PASSWORD CANNOT BE THE SAME AS YOUR CURRENT PASSWORD!";
+			isValid = false;
+			document.getElementById('newPassword').classList.add('invalid-field');
+		} else {
+			document.getElementById('newPassword').classList.remove('invalid-field');
+		}
+
+		// Check Password Requirements Checklist Validation
+		if (isValid && (!hasMinLength || !hasCapital || !hasNumber || !hasNoSpaces)) {
+			errorMessage = "PASSWORD DOES NOT MEET ALL SECURITY GUIDELINES!";
+			isValid = false;
+			document.getElementById('newPassword').classList.add('invalid-field');
+		}
+
+		// Check New password matching
+		if (isValid && newPass !== confirmPass) {
+			errorMessage = "NEW CONFIRMED PASSWORDS DO NOT MATCH!";
+			isValid = false;
+			document.getElementById('confirmPassword').classList.add('invalid-field');
+		} else {
+			document.getElementById('confirmPassword').classList.remove('invalid-field');
+		}
+
+		if (!isValid) {
+			event.preventDefault(); // Stop Jsp submission
+
+			// Show standard customized error notice block (no system alerts)
+			alertText.textContent = errorMessage;
+			alertBox.classList.remove('hidden');
+
+			// Trigger card shake animation
+			card.classList.remove('shake-it');
+			card.offsetHeight; // force reflow
+			card.classList.add('shake-it');
+
+			// Scroll dynamically to the alert box
+			alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			return false;
+		}
+
+		return true;
+	}
+
+    // Toggles visibility types and flips eye inline icons
     function togglePassword(inputId) {
         const input = document.getElementById(inputId);
+        const button = input.nextElementSibling;
+        
+        let showEye = null;
+        let hideEye = null;
+
+        // Custom search to handle confirm input structures cleanly
+        if (inputId === 'confirmPassword') {
+            const eyeBtn = document.getElementById('confirmEyeBtn');
+            showEye = eyeBtn.querySelector('.show-eye');
+            hideEye = eyeBtn.querySelector('.hide-eye');
+        } else {
+            showEye = button.querySelector('.show-eye');
+            hideEye = button.querySelector('.hide-eye');
+        }
+
         if (input.type === 'password') {
             input.type = 'text';
+            showEye.classList.add('hidden');
+            hideEye.classList.remove('hidden');
         } else {
             input.type = 'password';
+            showEye.classList.remove('hidden');
+            hideEye.classList.add('hidden');
         }
     }
 
-    // Fungsi asal untuk hilangkan alert automatik
+    // Dynamic auto-dismiss notification timer (3 seconds)
     window.addEventListener('DOMContentLoaded', () => {
         const alert = document.getElementById('statusAlert');
         if (alert) {
@@ -287,6 +567,18 @@ function validateForm(event) {
                 alert.style.opacity = '0';
                 setTimeout(() => { alert.style.display = 'none'; }, 500);
             }, 3000);
+        }
+
+        // ✅ CURRENT PASSWORD ERROR MATCH FEEDBACK: If error contains current password mismatch markers, highlight it red immediately on load
+        const urlParams = new URLSearchParams(window.location.search);
+        const errParam = urlParams.get('error') || "";
+        if (errParam.toLowerCase().includes("current") || errParam.toLowerCase().includes("old") || errParam.toLowerCase().includes("login")) {
+            const oldPassInput = document.getElementById('oldPassword');
+            if (oldPassInput) {
+                oldPassInput.classList.add('invalid-field');
+                const card = document.getElementById('formCard');
+                card.classList.add('shake-it');
+            }
         }
     });
 </script>

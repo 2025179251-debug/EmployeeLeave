@@ -409,8 +409,8 @@ body {
                     labels: catLabels,
                     datasets: [{
                         data: catData,
-                        backgroundColor: ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444', '#a855f7'],
-                        borderWidth: 5,
+                        backgroundColor: ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444','#f7ce55', '#a855f7', '#e11d7c'],
+                        borderWidth: 7,
                         borderColor: '#ffffff',
                         hoverOffset: 15
                     }]

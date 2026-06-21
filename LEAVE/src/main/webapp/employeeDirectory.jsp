@@ -22,7 +22,7 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link
-	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
 	rel="stylesheet">
 
 <style>
@@ -75,34 +75,6 @@ body {
 	display: block;
 }
 
-.tabs {
-	display: flex;
-	gap: 12px;
-	margin: 24px 0;
-}
-
-.tab {
-	text-decoration: none;
-	font-weight: 800;
-	font-size: 12px;
-	padding: 10px 18px;
-	border-radius: 10px;
-	border: 1px solid var(--border);
-	background: #fff;
-	color: var(--muted);
-	text-transform: uppercase;
-	transition: 0.2s;
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.tab.active {
-	border-color: var(--blue-primary);
-	background: var(--blue-light);
-	color: var(--blue-primary);
-}
-
 .card {
 	background: var(--card);
 	border: 1px solid var(--border);
@@ -135,6 +107,7 @@ th, td {
 	border-bottom: 1px solid #f1f5f9;
 	padding: 18px 24px;
 	text-align: left;
+	vertical-align: middle;
 }
 
 th {
@@ -240,6 +213,21 @@ th {
 	text-align: center;
 }
 
+/* ✅ RESOLVED SPECIFICATION FOR THE MODAL STRUCTURE AND ROUNDED RADIUS */
+.detail-modal-content {
+	background: white;
+	width: 100%;
+	max-width: 750px;
+	max-height: 90vh;
+	border-radius: 32px;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .modal-active {
 	display: flex;
 }
@@ -255,7 +243,6 @@ th {
 	pointer-events: none;
 }
 
-/* Custom color for Cancel Button */
 .btn-cancel {
 	background: #f1f5f9;
 	color: #475569;
@@ -263,6 +250,17 @@ th {
 
 .btn-cancel:hover {
 	background: #e2e8f0;
+}
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 </style>
 </head>
@@ -275,16 +273,15 @@ th {
 		<jsp:include page="topbar.jsp" />
 
 		<div class="pageWrap">
-			<div class="mb-8">
-				<h2 class="title">Employee Directory</h2>
-				<span class="sub-label">List of employee record account
-					permissions and status</span>
-			</div>
-
-			<div class="tabs">
-				<a class="tab" href="RegisterEmployee"> <%= PlusIcon("w-3.5 h-3.5") %>Register
-				</a> <a class="tab active" href="EmployeeDirectory"> <%= UsersIcon("w-3.5 h-3.5") %>Directory
-				</a>
+            <!-- Header section with new Registration Button -->
+			<div class="flex justify-between items-center mb-8">
+				<div>
+					<h2 class="title">Employee Directory</h2>
+					<span class="sub-label">List of employee record account permissions and status</span>
+				</div>
+                <a href="RegisterEmployee" class="bg-blue-600 text-white px-6 py-3.5 rounded-2xl font-bold text-xs uppercase hover:bg-blue-700 transition-all flex items-center gap-3 shadow-lg hover:shadow-blue-200 active:scale-95 transform">
+                    <%= PlusIcon("w-4 h-4") %> Register New Employee
+                </a>
 			</div>
 
 			<c:if test="${not empty param.msg}">
@@ -338,6 +335,21 @@ th {
                                     String status = String.valueOf(u.get("status") != null ? u.get("status") : "ACTIVE");
                                     Date hiredate = (Date) u.get("hiredate");
                                     
+                                    // Extract register details safely
+                                    String icNumber = String.valueOf(u.get("icNumber") != null ? u.get("icNumber") : "---");
+                                    String gender = String.valueOf(u.get("gender") != null ? u.get("gender") : "---");
+                                    String street = String.valueOf(u.get("street") != null ? u.get("street") : "---");
+                                    String city = String.valueOf(u.get("city") != null ? u.get("city") : "---");
+                                    String postalCode = String.valueOf(u.get("postalCode") != null ? u.get("postalCode") : "---");
+                                    String state = String.valueOf(u.get("state") != null ? u.get("state") : "---");
+                                    String profilePic = String.valueOf(u.get("profilePic") != null ? u.get("profilePic") : "---");
+
+                                    // Replace double quotes with safe HTML attributes
+                                    String escFullname = fullname.replace("\"", "&quot;");
+                                    String escStreet = street.replace("\"", "&quot;");
+                                    String escCity = city.replace("\"", "&quot;");
+                                    String escState = state.replace("\"", "&quot;");
+
                                     String joinYear = "0000";
                                     if (hiredate != null) {
                                         cal.setTime(hiredate);
@@ -350,7 +362,29 @@ th {
                         %>
 							<tr class="<%= !isActive ? "row-inactive" : "" %>">
 								<td>
-									<div class="font-bold text-slate-800 uppercase text-sm"><%= fullname %></div>
+									<!-- Configured name hyperlink to trigger detailed Modal profile popup -->
+									<div class="font-bold text-slate-800 uppercase text-sm">
+										<a href="javascript:void(0)" 
+										   class="text-slate-800 hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+										   onclick="showDetailModal(this)"
+										   data-empid="<%= empid %>"
+										   data-customid="<%= customId %>"
+										   data-fullname="<%= escFullname %>"
+										   data-email="<%= email %>"
+										   data-role="<%= role %>"
+										   data-phone="<%= (phone == null || phone.isBlank()) ? "---" : phone %>"
+										   data-ic="<%= icNumber %>"
+										   data-gender="<%= "M".equalsIgnoreCase(gender) ? "MALE" : ("F".equalsIgnoreCase(gender) ? "FEMALE" : "---") %>"
+										   data-hiredate="<%= hiredate != null ? sdf.format(hiredate) : "---" %>"
+										   data-street="<%= escStreet %>"
+										   data-city="<%= escCity %>"
+										   data-postalcode="<%= postalCode %>"
+										   data-state="<%= escState %>"
+										   data-status="<%= status %>"
+										   data-profilepic="<%= profilePic %>">
+											<%= fullname %>
+										</a>
+									</div>
 									<div class="mt-1 flex items-center gap-2">
 										<span
 											class="badge <%= isAdmin ? "badge-admin" : "bg-slate-100 text-slate-500 border-slate-200" %>">
@@ -415,10 +449,117 @@ th {
 				</form>
 			</div>
 		</div>
+
+		<!-- Detailed Profile Modal -->
+		<div id="detailModal" class="modal-overlay">
+			<div class="detail-modal-content">
+				<!-- Header Graphic Band with Title inside the solid Blue area -->
+				<div class="bg-[#2563eb] h-28 relative flex items-start pt-6 px-8 shrink-0">
+					<span class="text-white font-extrabold text-xxl uppercase tracking-widest">Profile Details</span>
+					<button type="button" onclick="closeDetailModal()" class="absolute top-5 right-6 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all">
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+					</button>
+				</div>
+				
+				<!-- Avatar, Name & Overall Badges (Positioned cleanly below the banner) -->
+				<div class="px-8 pt-4 pb-4 border-b border-slate-100 bg-white shrink-0 relative">
+					<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+						<div class="flex items-start gap-4">
+							<div id="detailAvatarContainer" class="-mt-14 relative z-10 w-24 h-24 bg-white rounded-2xl p-1.5 shadow-md flex items-center justify-center border border-slate-100 overflow-hidden shrink-0">
+								<!-- Dynamic image or vector SVG loaded here -->
+							</div>
+							<div class="text-left pt-1 min-w-0">
+								<!-- Name Styled EXACTLY as requested: Slate 800, tight tracking, uppercase, font-black, size 2xl, and tight line height -->
+								<h3 id="detailFullname" class="text-2xl font-black text-slate-800 uppercase tracking-tight leading-tight mb-2 break-words"></h3>
+								<div class="flex flex-wrap items-center gap-2">
+									<span id="detailRoleBadge" class="badge"></span>
+									<span id="detailCustomId" class="text-xs font-bold text-slate-400 uppercase tracking-wider"></span>
+								</div>
+							</div>
+						</div>
+						<div class="pt-1 shrink-0">
+							<span id="detailStatusBadge" class="badge"></span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Detailed Field Data (Scroll Container is isolated from headers to prevent name shifts from altering heights) -->
+				<div id="detailScrollContainer" class="flex-1 overflow-y-auto p-8 space-y-4 text-left">
+					<!-- Personal Secure Data Section -->
+					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">SECURE IDENTIFICATION</h4>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">IC Number</label>
+								<span id="detailIC" class="text-xs font-semibold text-slate-700"></span>
+							</div>
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Gender</label>
+								<span id="detailGender" class="text-xs font-semibold text-slate-700"></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Contact Channels -->
+					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">CONTACT INFO</h4>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Work Email</label>
+								<span id="detailEmail" class="text-xs font-semibold text-slate-700 break-all"></span>
+							</div>
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Phone Contact</label>
+								<span id="detailPhone" class="text-xs font-semibold text-slate-700"></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Employment Data -->
+					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">EMPLOYMENT PERMISSIONS</h4>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Role Type</label>
+								<span id="detailRole" class="text-xs font-bold text-slate-700"></span>
+							</div>
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Date Joined</label>
+								<span id="detailHireDate" class="text-xs font-semibold text-slate-700"></span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Complete Addresses -->
+					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">RESIDENTIAL ADDRESS</h4>
+						<div class="space-y-3">
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Street Address</label>
+								<span id="detailStreet" class="text-xs font-semibold text-slate-700 uppercase"></span>
+							</div>
+							<div class="grid grid-cols-3 gap-4">
+								<div class="col-span-2">
+									<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">City</label>
+									<span id="detailCity" class="text-xs font-semibold text-slate-700 uppercase"></span>
+								</div>
+								<div>
+									<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Postal Code</label>
+									<span id="detailPostalCode" class="text-xs font-semibold text-slate-700"></span>
+								</div>
+							</div>
+							<div>
+								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">State</label>
+								<span id="detailState" class="text-xs font-semibold text-slate-700 uppercase"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</main>
 
 	<script>
-        // Auto-remove message after 3 seconds
         window.onload = function() {
             const statusMsg = document.getElementById('statusMsg');
             if (statusMsg) {
@@ -441,7 +582,6 @@ th {
             formId.value = id;
             formStatus.value = target;
 
-            // Convert staff name to uppercase for strict styling
             const upperName = name.toUpperCase();
 
             if (target === 'INACTIVE') {
@@ -464,9 +604,142 @@ th {
             document.getElementById('confirmModal').classList.remove('modal-active');
         }
 
+        /* Displays the Detailed Profile Modal & injects dynamic vector avatars based on employee registration details */
+        function showDetailModal(element) {
+            const modal = document.getElementById('detailModal');
+            
+            // Extract from dataset
+            const fullname = element.getAttribute('data-fullname');
+            const customid = element.getAttribute('data-customid');
+            const email = element.getAttribute('data-email');
+            const role = element.getAttribute('data-role');
+            const phone = element.getAttribute('data-phone');
+            const ic = element.getAttribute('data-ic');
+            const gender = element.getAttribute('data-gender');
+            const hiredate = element.getAttribute('data-hiredate');
+            const street = element.getAttribute('data-street');
+            const city = element.getAttribute('data-city');
+            const postalcode = element.getAttribute('data-postalcode');
+            const state = element.getAttribute('data-state');
+            const status = element.getAttribute('data-status');
+            const profilePic = element.getAttribute('data-profilepic');
+
+            // Force resetting scroll position back to the top
+            const scrollContainer = document.getElementById('detailScrollContainer');
+            if (scrollContainer) {
+                scrollContainer.scrollTop = 0;
+            }
+
+            // Map data to DOM Elements
+            document.getElementById('detailFullname').innerText = fullname;
+            document.getElementById('detailCustomId').innerText = customid;
+            document.getElementById('detailIC').innerText = ic;
+            document.getElementById('detailGender').innerText = gender;
+            document.getElementById('detailEmail').innerText = email;
+            document.getElementById('detailPhone').innerText = phone;
+            document.getElementById('detailRole').innerText = role;
+            document.getElementById('detailHireDate').innerText = hiredate;
+            document.getElementById('detailStreet').innerText = street;
+            document.getElementById('detailCity').innerText = city;
+            document.getElementById('detailPostalCode').innerText = postalcode;
+            document.getElementById('detailState').innerText = state;
+
+            // Role Badge styling
+            const roleBadge = document.getElementById('detailRoleBadge');
+            roleBadge.innerText = role;
+            roleBadge.className = "badge";
+            if (role === 'ADMIN') {
+                roleBadge.classList.add('badge-admin');
+            } else {
+                roleBadge.classList.add('bg-slate-100', 'text-slate-500', 'border-slate-200');
+            }
+
+            // Status Badge styling
+            const statusBadge = document.getElementById('detailStatusBadge');
+            statusBadge.innerText = status;
+            statusBadge.className = "badge";
+            if (status === 'ACTIVE') {
+                statusBadge.classList.add('badge-active');
+            } else {
+                statusBadge.classList.add('badge-inactive');
+            }
+
+            // Avatar Container Logic
+            const avatarBox = document.getElementById('detailAvatarContainer');
+            
+            // Checking if profilePic exists and is not empty or "---"
+            if (profilePic && profilePic !== "---" && profilePic !== "null" && profilePic.trim() !== "") {
+                const imgNode = document.createElement('img');
+                imgNode.src = profilePic;
+                imgNode.className = "w-full h-full object-cover rounded-xl";
+                imgNode.onerror = function() {
+                    // Fallback if image fails to load
+                    loadDefaultAvatar(gender, avatarBox, fullname);
+                };
+                avatarBox.innerHTML = "";
+                avatarBox.appendChild(imgNode);
+            } else {
+                loadDefaultAvatar(gender, avatarBox, fullname);
+            }
+
+            modal.classList.add('modal-active');
+        }
+
+        // Generates dynamic gender SVG or initials fallback avatar
+        function loadDefaultAvatar(gender, container, fullname) {
+            const maleAvatar = `
+                <svg class="w-full h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" rx="16" fill="#EFF6FF"/>
+                    <circle cx="50" cy="40" r="18" fill="#DBEAFE"/>
+                    <path d="M50 22C41 22 39 28 39 31C41 31 43 27 50 27C57 27 59 31 61 31C61 28 59 22 50 22Z" fill="#1E40AF"/>
+                    <path d="M22 85C22 65.5 34.5 58 50 58C65.5 58 78 65.5 78 85V100H22V85Z" fill="#2563EB"/>
+                    <path d="M42 58L50 68L58 58H42Z" fill="#FFFFFF"/>
+                    <path d="M48 64V80H52V64H48Z" fill="#EF4444"/>
+                </svg>
+            `;
+            const femaleAvatar = `
+                <svg class="w-full h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" rx="16" fill="#FDF2F8"/>
+                    <circle cx="50" cy="41" r="17" fill="#FCE7F3"/>
+                    <path d="M30 35C30 20 40 18 50 18C60 18 70 20 70 35C70 42 67 47 67 47C64 43 61 32 50 32C39 32 36 43 33 47C33 47 30 42 30 35Z" fill="#475569"/>
+                    <path d="M22 85C22 66 34.5 59 50 59C65.5 59 78 66 78 85V100H22V85Z" fill="#4F46E5"/>
+                    <path d="M40 59L50 71L60 59H40Z" fill="#FFFFFF"/>
+                    <circle cx="50" cy="78" r="3" fill="#FACC15"/>
+                </svg>
+            `;
+            
+            if (gender === 'MALE') {
+                container.innerHTML = maleAvatar;
+            } else if (gender === 'FEMALE') {
+                container.innerHTML = femaleAvatar;
+            } else {
+                // Generates dynamic initials text fallback
+                let initials = "U";
+                if (fullname && fullname.trim() !== "") {
+                    let parts = fullname.trim().split(" ");
+                    if (parts.length > 1) {
+                        initials = (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+                    } else {
+                        initials = parts[0].charAt(0).toUpperCase();
+                    }
+                }
+                container.innerHTML = `
+                    <div class="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-black text-2xl text-white rounded-xl">
+                        \${initials}
+                    </div>
+                `;
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('modal-active');
+        }
+
         window.onclick = function(event) {
-            const modal = document.getElementById('confirmModal');
-            if (event.target == modal) closeModal();
+            const confirmModal = document.getElementById('confirmModal');
+            const detailModal = document.getElementById('detailModal');
+            if (event.target == confirmModal) closeModal();
+            if (event.target == detailModal) closeDetailModal();
         }
     </script>
 </body>

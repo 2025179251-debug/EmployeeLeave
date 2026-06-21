@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ReviewLeave Servlet Manages the workflow for managers to view and process
@@ -32,30 +31,34 @@ public class ReviewLeave extends HttpServlet {
 		}
 
 		try {
-			// 2. Fetch all actionable requests (Pending or Cancellation Requested)
+			// 2. Run Automatic Maintenance Check to cancel expired leaves and refund balances
+			managerDAO.autoCancelExpiredLeaves();
+
+			// 3. Fetch all active requests (Pending or Cancellation Requested)
 			List<LeaveRecord> allRequests = managerDAO.getRequestsForReview();
 
-			// Optional: Filter by Manager ID if your DAO doesn't already restrict the query
-			// String managerId = String.valueOf(session.getAttribute("empid"));
-
-			// 3. Calculate statistics for the Manager UI badges
+			// 4. Calculate statistics for the Manager UI badges
 			long pendingCount = allRequests.stream().filter(r -> "PENDING".equalsIgnoreCase(r.getStatusCode())).count();
-
 			long cancelReqCount = allRequests.stream()
 					.filter(r -> "CANCELLATION_REQUESTED".equalsIgnoreCase(r.getStatusCode())).count();
 
-			// 4. Set attributes for the JSP
+			// 5. Set attributes for the JSP
 			request.setAttribute("leaves", allRequests);
 			request.setAttribute("pendingCount", (int) pendingCount);
 			request.setAttribute("cancelReqCount", (int) cancelReqCount);
 
-			// 5. Forward to UI
+			// 6. Forward to UI (matches your specific reviewLeave.jsp filename)
 			request.getRequestDispatcher("/reviewLeave.jsp").forward(request, response);
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			response.sendRedirect("Dashboard?error="
-					+ URLEncoder.encode("Error loading requests: " + e.getMessage(), StandardCharsets.UTF_8));
+			// Fallback: If an exception occurs, forward to UI showing the error directly on the screen (no 404s/infinite redirects)
+			request.setAttribute("error", "Error loading requests: " + e.getMessage());
+			try {
+				request.getRequestDispatcher("/reviewLeave.jsp").forward(request, response);
+			} catch (Exception ex) {
+				response.sendRedirect("login.jsp?error=" + URLEncoder.encode("An error occurred: " + ex.getMessage(), StandardCharsets.UTF_8));
+			}
 		}
 	}
 
@@ -84,7 +87,7 @@ public class ReviewLeave extends HttpServlet {
 
 			int leaveId = Integer.parseInt(leaveIdStr);
 
-			// Handle empty comments to avoid NULL in DB if preferred
+			// Handle empty comments to avoid NULL in DB
 			if (comment == null)
 				comment = "";
 

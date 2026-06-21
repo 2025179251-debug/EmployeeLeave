@@ -23,7 +23,10 @@ public class EmployeeDirectory extends HttpServlet {
 		}
 
 		List<Map<String, Object>> users = new ArrayList<>();
-		String sql = "SELECT EMPID, FULLNAME, EMAIL, ROLE, PHONENO, HIREDATE, STATUS "
+		
+		// Updated Query: Now includes PROFILE_PICTURE column to load within the detailed profile cards
+		String sql = "SELECT EMPID, FULLNAME, EMAIL, ROLE, PHONENO, HIREDATE, STATUS, "
+				+ "IC_NUMBER, GENDER, STREET, CITY, POSTAL_CODE, STATE, PROFILE_PICTURE "
 				+ "FROM USERS ORDER BY STATUS ASC, FULLNAME ASC";
 
 		try (Connection con = DatabaseConnection.getConnection();
@@ -39,6 +42,18 @@ public class EmployeeDirectory extends HttpServlet {
 				u.put("phone", rs.getString("PHONENO"));
 				u.put("hiredate", rs.getDate("HIREDATE"));
 				u.put("status", rs.getString("STATUS") != null ? rs.getString("STATUS") : "ACTIVE");
+				
+				// Secure registration details retrieved using database-aligned column names
+				u.put("icNumber", rs.getString("IC_NUMBER"));
+				u.put("gender", rs.getString("GENDER"));
+				u.put("street", rs.getString("STREET"));
+				u.put("city", rs.getString("CITY"));
+				u.put("postalCode", rs.getString("POSTAL_CODE"));
+				u.put("state", rs.getString("STATE"));
+				
+				// Extract the Profile Picture URL or Base64 string from the database
+				u.put("profilePic", rs.getString("PROFILE_PICTURE"));
+				
 				users.add(u);
 			}
 		} catch (Exception e) {

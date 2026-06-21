@@ -18,6 +18,17 @@ if (ses == null || ses.getAttribute("empid") == null
 }
 
 // =========================
+// ROBUST GENDER LOGIC
+// =========================
+Object genderObj = ses.getAttribute("gender");
+if (genderObj == null)
+	genderObj = ses.getAttribute("GENDER");
+
+String gen = (genderObj != null) ? String.valueOf(genderObj).trim().toUpperCase() : "";
+boolean isFemale = gen.startsWith("F") || gen.startsWith("P") || gen.contains("FEMALE") || gen.contains("PEREMPUAN");
+boolean isMale = !isFemale;
+
+// =========================
 // DATA RETRIEVAL
 // =========================
 List<Map<String, Object>> allLeaves = (List<Map<String, Object>>) request.getAttribute("leaves");
@@ -31,6 +42,21 @@ if (years == null)
 
 String currentStatus = request.getParameter("status") != null ? request.getParameter("status") : "ALL";
 String currentYear = request.getParameter("year") != null ? request.getParameter("year") : "";
+String currentType = request.getParameter("type") != null ? request.getParameter("type") : "ALL";
+
+// =========================
+// IN-JSP FALLBACK FILTERING (Guarantees dynamic leave type filtering capability)
+// =========================
+if (currentType != null && !currentType.isEmpty() && !"ALL".equalsIgnoreCase(currentType)) {
+	List<Map<String, Object>> filteredLeaves = new ArrayList<>();
+	for (Map<String, Object> l : allLeaves) {
+		String typeCodeVal = (l.get("type") != null) ? String.valueOf(l.get("type")).trim().toUpperCase() : "";
+		if (typeCodeVal.contains(currentType.toUpperCase()) || currentType.toUpperCase().contains(typeCodeVal)) {
+			filteredLeaves.add(l);
+		}
+	}
+	allLeaves = filteredLeaves;
+}
 
 // =========================
 // PAGINATION LOGIC (10 entries)
@@ -91,10 +117,10 @@ Date todayMidnight = calToday.getTime();
 :root {
 	--bg: #f1f5f9;
 	--card: #ffffff;
-	--primary: #2563eb;
-	--text-main: #1e293b;
-	--text-muted: #475569;
 	--border: #e2e8f0;
+	--text: #1e293b;
+	--muted: #475569;
+	--primary: #2563eb;
 	--radius: 20px;
 }
 
@@ -104,21 +130,20 @@ Date todayMidnight = calToday.getTime();
 }
 
 body {
-	background: var(--bg);
-	color: var(--text-main);
 	margin: 0;
+	background: var(--bg);
+	color: var(--text);
 	overflow-x: hidden;
 	-webkit-font-smoothing: antialiased;
 }
 
 .pageWrap {
-	padding: 32px 40px;
-	max-width: 1400px;
+	max-width: 1300px;
 	margin: 0 auto;
+	padding: 32px 40px;
 }
 
-/* Consistent Header Styling */
-.title {
+h2.title {
 	font-size: 26px;
 	font-weight: 800;
 	margin: 0;
@@ -153,7 +178,7 @@ body {
 .filter-group {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 5px;
 }
 
 .filter-group label {
@@ -166,7 +191,7 @@ body {
 
 .filter-card select {
 	height: 45px !important;
-	padding: 0 20px !important;
+	padding: 0 4px !important;
 	border-radius: 12px;
 	border: 2.1px solid var(--border);
 	background: #fff;
@@ -219,6 +244,7 @@ select, input[type="date"], input[type="text"], input[type="number"],
 table {
 	width: 100%;
 	border-collapse: collapse;
+    table-layout: fixed;
 }
 
 th {
@@ -240,6 +266,15 @@ td {
 	vertical-align: middle;
 }
 
+/* Column Width Ratios - Re-balanced to remove big gaps */
+.col-id { width: 13%; }
+.col-type { width: 18%; }
+.col-dates { width: 14%; } /* Reduced as dates are now vertical */
+.col-days { width: 10%; text-align: center; }
+.col-status { width: 17%; }
+.col-applied { width: 13%; }
+.col-action { width: 13%; text-align: center; }
+
 .badge {
 	padding: 4px 12px;
 	border-radius: 12px;
@@ -251,37 +286,12 @@ td {
 	gap: 6px;
 }
 
-.status-pending {
-	background: #fffbeb;
-	color: #b45309;
-	border: 1px solid #fde68a;
-}
+.status-pending { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.status-approved { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.status-rejected { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.status-cancelled { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.status-cancellation-requested { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
 
-.status-approved {
-	background: #ecfdf5;
-	color: #047857;
-	border: 1px solid #a7f3d0;
-}
-
-.status-rejected {
-	background: #fef2f2;
-	color: #b91c1c;
-	border: 1px solid #fecaca;
-}
-
-.status-cancelled {
-	background: #f1f5f9;
-	color: #475569;
-	border: 1px solid #e2e8f0;
-}
-
-.status-cancellation-requested {
-	background: #fff7ed;
-	color: #c2410c;
-	border: 1px solid #fdba74;
-}
-
-/* Pagination UI */
 .pagination-container {
 	padding: 16px 24px;
 	background: #fcfcfd;
@@ -386,9 +396,7 @@ td {
 	padding: 20px;
 }
 
-.modal-overlay.show {
-	display: flex;
-}
+.modal-overlay.show { display: flex; }
 
 .modal-content {
 	background: white;
@@ -405,27 +413,19 @@ td {
 	animation: slideUp 0.3s ease;
 }
 
-@
-keyframes slideUp {
-	from {opacity: 0;
-	transform: translateY(20px);
+@keyframes slideUp {
+	from {opacity: 0; transform: translateY(20px);}
+	to {opacity: 1; transform: translateY(0);}
 }
 
-to {
-	opacity: 1;
-	transform: translateY(0);
-}
-
-}
 .modal-body {
 	overflow-y: auto;
 	padding-right: 8px;
 	flex: 1;
 }
 
-/* ORIGINAL Premium Details Layout: Label above Value */
 .info-label {
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 800;
 	color: #94a3b8;
 	text-transform: uppercase;
@@ -572,67 +572,63 @@ to {
 				</div>
 			</div>
 
-			<%
-			if (dbError != null) {
-			%><div id="statusAlert"
-				class="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm font-bold border border-red-100 uppercase transition-opacity duration-500">
-				<i class="fas fa-exclamation-circle mr-2"></i>
-				<%=dbError%></div>
-			<%
-			}
-			%>
+			<% if (dbError != null) { %>
+                <div id="statusAlert" class="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm font-bold border border-red-100 uppercase transition-opacity duration-500">
+				<i class="fas fa-exclamation-circle mr-2"></i><%=dbError%></div>
+			<% } %>
 
-			<form action="<%=request.getContextPath()%>/LeaveHistory"
-				method="get" class="filter-card">
+			<form action="<%=request.getContextPath()%>/LeaveHistory" method="get" class="filter-card">
 				<input type="hidden" name="p" value="1">
 				<div class="filter-group">
 					<label>Status</label>
-					<%-- Automatic submit on change + all 5 status --%>
 					<select name="status" onchange="this.form.submit()">
-						<option value="ALL"
-							<%=currentStatus.equals("ALL") ? "selected" : ""%>>All
-							Statuses</option>
-						<option value="PENDING"
-							<%=currentStatus.equals("PENDING") ? "selected" : ""%>>Pending
-							Approval</option>
-						<option value="APPROVED"
-							<%=currentStatus.equals("APPROVED") ? "selected" : ""%>>Approved</option>
-						<option value="REJECTED"
-							<%=currentStatus.equals("REJECTED") ? "selected" : ""%>>Rejected</option>
-						<option value="CANCELLED"
-							<%=currentStatus.equals("CANCELLED") ? "selected" : ""%>>Cancelled</option>
-						<option value="CANCELLATION_REQUESTED"
-							<%=currentStatus.equals("CANCELLATION_REQUESTED") ? "selected" : ""%>>Cancellation
-							Requested</option>
-					</select> <label class="ml-4">Year</label> <select name="year"
-						onchange="this.form.submit()">
+						<option value="ALL" <%=currentStatus.equals("ALL") ? "selected" : ""%>>All Statuses</option>
+						<option value="PENDING" <%=currentStatus.equals("PENDING") ? "selected" : ""%>>Pending Approval</option>
+						<option value="APPROVED" <%=currentStatus.equals("APPROVED") ? "selected" : ""%>>Approved</option>
+						<option value="REJECTED" <%=currentStatus.equals("REJECTED") ? "selected" : ""%>>Rejected</option>
+						<option value="CANCELLED" <%=currentStatus.equals("CANCELLED") ? "selected" : ""%>>Cancelled</option>
+						<option value="CANCELLATION_REQUESTED" <%=currentStatus.equals("CANCELLATION_REQUESTED") ? "selected" : ""%>>Cancellation Requested</option>
+					</select> 
+					
+					<!-- New Leave Category Dynamic Filter Dropdown -->
+					<label class="ml-4">Leave Type</label>
+					<select name="type" onchange="this.form.submit()">
+						<option value="ALL" <%=currentType.equals("ALL") ? "selected" : ""%>>All Leave Types</option>
+						<option value="ANNUAL LEAVE" <%=currentType.equals("ANNUAL LEAVE") ? "selected" : ""%>>Annual Leave</option>
+						<option value="SICK LEAVE" <%=currentType.equals("SICK LEAVE") ? "selected" : ""%>>Sick Leave</option>
+						<option value="EMERGENCY LEAVE" <%=currentType.equals("EMERGENCY LEAVE") ? "selected" : ""%>>Emergency Leave</option>
+						<option value="HOSPITALIZATION" <%=currentType.equals("HOSPITALIZATION") ? "selected" : ""%>>Hospitalization</option>
+						<% if (isFemale) { %>
+							<option value="MATERNITY LEAVE" <%=currentType.equals("MATERNITY LEAVE") ? "selected" : ""%>>Maternity Leave</option>
+						<% } %>
+						<% if (isMale) { %>
+							<option value="PATERNITY LEAVE" <%=currentType.equals("PATERNITY LEAVE") ? "selected" : ""%>>Paternity Leave</option>
+						<% } %>
+					</select>
+					
+					<label class="ml-4">Year</label> 
+					<select name="year" onchange="this.form.submit()">
 						<option value="">All Years</option>
-						<%
-						for (String yr : years) {
-						%><option value="<%=yr%>"
-							<%=yr.equals(currentYear) ? "selected" : ""%>><%=yr%></option>
-						<%
-						}
-						%>
+						<% for (String yr : years) { %>
+                            <option value="<%=yr%>" <%=yr.equals(currentYear) ? "selected" : ""%>><%=yr%></option>
+						<% } %>
 					</select>
 				</div>
-				<div
-					class="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-					Total Records:
-					<%=totalRecords%></div>
+				<div class="text-[11px] font-black text-slate-400 uppercase tracking-widest"> Total Records: <%=totalRecords%></div>
 			</form>
 
-			<div class="table-card">
+			<div class="table-card overflow-x-auto">
+                <!-- min-width ensures columns stay aligned on small screens while keeping layout dynamic -->
 				<table>
 					<thead>
 						<tr>
-							<th>Record ID</th>
-							<th>Leave Category</th>
-							<th>Dates</th>
-							<th>Days</th>
-							<th>Status</th>
-							<th>Applied On</th>
-							<th style="text-align: right">Action</th>
+							<th class="col-id">Record ID</th>
+							<th class="col-type">Leave Category</th>
+							<th class="col-dates">Dates</th>
+							<th class="col-days">Days</th>
+							<th class="col-status">Status</th>
+							<th class="col-applied">Applied On</th>
+							<th class="col-action">Action</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -640,37 +636,25 @@ to {
 						if (leaves.isEmpty()) {
 						%>
 						<tr>
-							<td colspan="7"
-								class="py-24 text-center text-slate-300 font-bold uppercase text-xs italic tracking-widest">No
-								matching history records found.</td>
+							<td colspan="7" class="py-24 text-center text-slate-300 font-bold uppercase text-xs italic tracking-widest">No matching history records found.</td>
 						</tr>
 						<%
 						} else {
 						for (Map<String, Object> l : leaves) {
 							String code = (String) l.get("status");
 							String badgeCls = "status-pending";
-							if ("APPROVED".equalsIgnoreCase(code))
-								badgeCls = "status-approved";
-							else if ("REJECTED".equalsIgnoreCase(code))
-								badgeCls = "status-rejected";
-							else if ("CANCELLED".equalsIgnoreCase(code))
-								badgeCls = "status-cancelled";
-							else if ("CANCELLATION_REQUESTED".equalsIgnoreCase(code))
-								badgeCls = "status-cancellation-requested";
+							if ("APPROVED".equalsIgnoreCase(code)) badgeCls = "status-approved";
+							else if ("REJECTED".equalsIgnoreCase(code)) badgeCls = "status-rejected";
+							else if ("CANCELLED".equalsIgnoreCase(code)) badgeCls = "status-cancelled";
+							else if ("CANCELLATION_REQUESTED".equalsIgnoreCase(code)) badgeCls = "status-cancellation-requested";
 
 							String startDisplay = "-", endDisplay = "-", appliedDisplay = "-";
 							String evtDisp = "N/A", disDisp = "N/A";
 							boolean isStartedOrPassed = false;
 							try {
-								Date sD = (String.valueOf(l.get("start")).contains("-"))
-								? sdfDb.parse(String.valueOf(l.get("start")))
-								: sdfDisplay.parse(String.valueOf(l.get("start")));
-								Date eD = (String.valueOf(l.get("end")).contains("-"))
-								? sdfDb.parse(String.valueOf(l.get("end")))
-								: sdfDisplay.parse(String.valueOf(l.get("end")));
-								Date aD = (String.valueOf(l.get("appliedOn")).contains("-"))
-								? sdfTimeDb.parse(String.valueOf(l.get("appliedOn")))
-								: sdfTimeDisplay.parse(String.valueOf(l.get("appliedOn")));
+								Date sD = (String.valueOf(l.get("start")).contains("-")) ? sdfDb.parse(String.valueOf(l.get("start"))) : sdfDisplay.parse(String.valueOf(l.get("start")));
+								Date eD = (String.valueOf(l.get("end")).contains("-")) ? sdfDb.parse(String.valueOf(l.get("end"))) : sdfDisplay.parse(String.valueOf(l.get("end")));
+								Date aD = (String.valueOf(l.get("appliedOn")).contains("-")) ? sdfTimeDb.parse(String.valueOf(l.get("appliedOn"))) : sdfTimeDisplay.parse(String.valueOf(l.get("appliedOn")));
 
 								startDisplay = sdfDisplay.format(sD);
 								endDisplay = sdfDisplay.format(eD);
@@ -679,27 +663,21 @@ to {
 								// FORMAT METADATA DATES
 								Object evtRaw = l.get("eventDate");
 								if (evtRaw != null && !String.valueOf(evtRaw).isEmpty() && !String.valueOf(evtRaw).equals("null")) {
-							Date eDt = (String.valueOf(evtRaw).contains("-"))
-									? sdfDb.parse(String.valueOf(evtRaw))
-									: sdfDisplay.parse(String.valueOf(evtRaw));
-							evtDisp = sdfDisplay.format(eDt);
+                                    Date eDt = (String.valueOf(evtRaw).contains("-")) ? sdfDb.parse(String.valueOf(evtRaw)) : sdfDisplay.parse(String.valueOf(evtRaw));
+                                    evtDisp = sdfDisplay.format(eDt);
 								}
 
 								Object disRaw = l.get("dischargeDate");
 								if (disRaw != null && !String.valueOf(disRaw).isEmpty() && !String.valueOf(disRaw).equals("null")) {
-							Date dDt = (String.valueOf(disRaw).contains("-"))
-									? sdfDb.parse(String.valueOf(disRaw))
-									: sdfDisplay.parse(String.valueOf(disRaw));
-							disDisp = sdfDisplay.format(dDt);
+                                    Date dDt = (String.valueOf(disRaw).contains("-")) ? sdfDb.parse(String.valueOf(disRaw)) : sdfDisplay.parse(String.valueOf(disRaw));
+                                    disDisp = sdfDisplay.format(dDt);
 								}
 
-								if (!todayMidnight.before(sD))
-							isStartedOrPassed = true;
-							} catch (Exception e) {
-							}
+								if (!todayMidnight.before(sD)) isStartedOrPassed = true;
+							} catch (Exception e) {}
 						%>
 						<tr class="hover:bg-slate-50/50 transition-colors">
-							<td><a href="javascript:void(0)" class="lr-id"
+							<td class="col-id"><a href="javascript:void(0)" class="lr-id"
 								onclick="viewDetails(this)" data-id="<%=l.get("id")%>"
 								data-idcode="#LR-<%=l.get("id")%>" data-name="<%=userFullName%>"
 								data-type="<%=l.get("type")%>" data-start="<%=startDisplay%>"
@@ -717,193 +695,114 @@ to {
 								data-dis="<%=disDisp%>"
 								data-cat="<%=l.get("emergencyCategory")%>"
 								data-cnt="<%=l.get("emergencyContact")%>"
-								data-spo="<%=l.get("spouseName")%>"> LR-<%=l.get("id")%>
+								data-spo="<%=l.get("spouseName")%>"
+								title="CLICK TO VIEW FULL APPLICATION DETAILS"> LR-<%=l.get("id")%>
 							</a></td>
-							<td class="font-black text-slate-700 uppercase"><%=l.get("type")%></td>
-							<td><span class="font-bold text-slate-700"><%=startDisplay%></span>
-								<%
-								if (!startDisplay.equals(endDisplay)) {
-								%><span
-								class="text-[11px] text-slate-500 block font-bold uppercase tracking-tight">to
-									<%=endDisplay%></span> <%
-								}
-								%></td>
-							<td class="font-black text-blue-600 text-base"><%=l.get("totalDays")%></td>
-							<td><span class="badge <%=badgeCls%>"><span
-									class="w-1.5 h-1.5 rounded-full bg-current"></span> <%=code.replace("_", " ")%></span></td>
-							<td class="text-slate-600 text-[12px] font-bold"><%=appliedDisplay%></td>
-							<td>
+							<td class="col-type font-black text-slate-700 uppercase"><%=l.get("type")%></td>
+                            
+                            <!-- FIX: Date Column with Vertical Centered Layout and 10px "TO" as per image_9b979a.png -->
+							<td class="col-dates">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <span class="text-[12px] text-slate-700 font-bold uppercase tracking-tight"><%=startDisplay%></span>
+                                    <span class="text-[10px] text-slate-700 font-bold uppercase py-0.5 leading-none">to</span>
+                                    <span class="text-[12px] text-slate-700 font-bold uppercase tracking-tight"><%=endDisplay%></span>
+                                </div>
+                            </td>
+
+							<td class="col-days font-black text-blue-600 text-base"><%=l.get("totalDays")%></td>
+							<td class="col-status"><span class="badge <%=badgeCls%>"><span class="w-1.5 h-1.5 rounded-full bg-current"></span> <%=code.replace("_", " ")%></span></td>
+							<td class="col-applied text-slate-600 text-[12px] font-bold"><%=appliedDisplay%></td>
+							<td class="col-action">
 								<div class="flex gap-2 justify-end">
-									<%
-									if ("PENDING".equalsIgnoreCase(code)) {
-									%>
-									<button class="btn-action"
-										onclick="openEditModal('<%=l.get("id")%>')"><%=EditIcon("w-4 h-4")%></button>
-									<button class="btn-action btn-danger"
-										onclick="askConfirm('DELETE', '<%=l.get("id")%>', '#LR-<%=l.get("id")%>')"><%=TrashIcon("w-4 h-4")%></button>
-									<%
-									} else if ("APPROVED".equalsIgnoreCase(code)) {
-									%>
-									<%
-									if (!isStartedOrPassed) {
-									%>
-									<button class="btn-action text-orange-500"
-										onclick="askConfirm('REQ_CANCEL', '<%=l.get("id")%>', '#LR-<%=l.get("id")%>')"><%=RotateCcwIcon("w-4 h-4")%></button>
-									<%
-									} else {
-									%>
-									<span
-										class="text-[11px] font-black text-slate-500 uppercase tracking-widest"></span>
-									<%
-									}
-									%>
-									<%
-									} else {
-									%>
-									<span
-										class="text-[11px] font-black text-slate-500 uppercase tracking-widest"></span>
-									<%
-									}
-									%>
+									<% if ("PENDING".equalsIgnoreCase(code)) { %>
+                                        <button class="btn-action" onclick="openEditModal('<%=l.get("id")%>')" title="EDIT APPLICATION"><%=EditIcon("w-4 h-4")%></button>
+                                        <button class="btn-action btn-danger" onclick="askConfirm('DELETE', '<%=l.get("id")%>', '#LR-<%=l.get("id")%>')" title="DELETE APPLICATION"><%=TrashIcon("w-4 h-4")%></button>
+									<% } else if ("APPROVED".equalsIgnoreCase(code)) { %>
+                                        <% if (!isStartedOrPassed) { %>
+                                            <button class="btn-action text-orange-500" onclick="askConfirm('REQ_CANCEL', '<%=l.get("id")%>', '#LR-<%=l.get("id")%>')" title="REQUEST CANCELLATION"><%=RotateCcwIcon("w-4 h-4")%></button>
+                                        <% } else { %>
+                                            <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest"></span>
+                                        <% } %>
+									<% } else { %>
+									    <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest"></span>
+									<% } %>
 								</div>
 							</td>
 						</tr>
-						<%
-						}
-						}
-						%>
+						<% } } %>
 					</tbody>
 				</table>
 
-				<!-- PAGINATION FOOTER -->
 				<div class="pagination-container">
-					<div class="pagination-info">
-						Showing
-						<%=totalRecords == 0 ? 0 : startIdx + 1%>
-						to
-						<%=endIdx%>
-						of
-						<%=totalRecords%>
-						entries
-					</div>
+					<div class="pagination-info"> Showing <%=totalRecords == 0 ? 0 : startIdx + 1%> to <%=endIdx%> of <%=totalRecords%> entries </div>
 					<div class="pagination-nav">
-						<%
-						String baseUrl = request.getContextPath() + "/LeaveHistory?status=" + currentStatus + "&year=" + currentYear;
-						%>
-						<a href="<%=baseUrl%>&p=<%=currentPage - 1%>"
-							class="nav-btn <%=currentPage == 1 ? "disabled" : ""%>">Previous</a>
-						<%
-						for (int i = 1; i <= totalPages; i++) {
-						%>
-						<a href="<%=baseUrl%>&p=<%=i%>"
-							class="nav-btn <%=currentPage == i ? "active" : ""%>"><%=i%></a>
-						<%
-						}
-						%>
-						<a href="<%=baseUrl%>&p=<%=currentPage + 1%>"
-							class="nav-btn <%=currentPage == totalPages || totalPages == 0 ? "disabled" : ""%>">Next</a>
+						<% String baseUrl = request.getContextPath() + "/LeaveHistory?status=" + currentStatus + "&year=" + currentYear + "&type=" + currentType; %>
+						<a href="<%=baseUrl%>&p=<%=currentPage - 1%>" class="nav-btn <%=currentPage == 1 ? "disabled" : ""%>">Previous</a>
+						<% for (int i = 1; i <= totalPages; i++) { %>
+						    <a href="<%=baseUrl%>&p=<%=i%>" class="nav-btn <%=currentPage == i ? "active" : ""%>"><%=i%></a>
+						<% } %>
+						<a href="<%=baseUrl%>&p=<%=currentPage + 1%>" class="nav-btn <%=currentPage == totalPages || totalPages == 0 ? "disabled" : ""%>">Next</a>
 					</div>
 				</div>
 			</div>
 		</div>
 	</main>
 
-	<!-- DETAIL POPUP MODAL (Original Grid Layout Restored) -->
+	<!-- DETAIL POPUP MODAL -->
 	<div class="modal-overlay" id="detailModal">
 		<div class="modal-content">
-			<button type="button" class="btn-close"
-				onclick="closeModal('detailModal')"><%=XCircleIcon("w-6 h-6")%></button>
+			<button type="button" class="btn-close" onclick="closeModal('detailModal')"><%=XCircleIcon("w-6 h-6")%></button>
 			<div class="modal-body">
-				<h3
-					class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-8 pr-12 border-b border-slate-100 pb-4">Application
-					Details</h3>
+				<h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-8 pr-12 border-b border-slate-100 pb-4">Application Details</h3>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12">
-					<div>
-						<span class="info-label">Staff Name</span> <span
-							class="info-value" id="popName"></span>
-					</div>
-					<div>
-						<span class="info-label">Record ID</span> <span class="info-value"
-							id="popId"></span>
-					</div>
+					<div><span class="info-label">Staff Name</span> <span class="info-value" id="popName"></span></div>
+					<div><span class="info-label">Record ID</span> <span class="info-value" id="popId"></span></div>
 				</div>
 
 				<div>
 					<span class="info-label">Leave Category</span>
 					<div class="flex items-center gap-3">
-						<span class="info-value text-blue-600 mb-0" id="popType"></span> <span
-							id="popTypeIdTag" class="type-id-tag"></span>
+						<span class="info-value text-blue-600 mb-0" id="popType"></span> <span id="popTypeIdTag" class="type-id-tag"></span>
 					</div>
 					<div class="mb-[18px]"></div>
-					<!-- Spacer to match layout -->
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 mt-4">
-					<div>
-						<span class="info-label">Start Date</span> <span
-							class="info-value" id="popStart"></span>
-					</div>
-					<div>
-						<span class="info-label">End Date</span> <span class="info-value"
-							id="popEnd"></span>
-					</div>
+					<div><span class="info-label">Start Date</span> <span class="info-value" id="popStart"></span></div>
+					<div><span class="info-label">End Date</span> <span class="info-value" id="popEnd"></span></div>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12">
-					<div>
-						<span class="info-label">Duration Type</span> <span
-							class="info-value uppercase" id="popDuration"></span>
-					</div>
-					<div>
-						<span class="info-label">Total Days</span> <span
-							class="info-value font-black text-blue-600" id="popDays"></span>
-					</div>
+					<div><span class="info-label">Duration Type</span> <span class="info-value uppercase" id="popDuration"></span></div>
+					<div><span class="info-label">Total Days</span> <span class="info-value font-black text-blue-600" id="popDays"></span></div>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12">
-					<div>
-						<span class="info-label">Submission Date</span> <span
-							class="info-value" id="popApplied"></span>
-					</div>
+					<div><span class="info-label">Submission Date</span> <span class="info-value" id="popApplied"></span></div>
 					<div>
 						<span class="info-label">Supportive Attachment</span>
 						<div id="attachBox" class="hidden">
-							<a id="modalAttachLink" href="#" target="_blank"
-								class="inline-flex items-center gap-3 bg-white border-2 border-slate-100 px-5 py-3 rounded-2xl text-[11px] font-black text-slate-600 hover:border-blue-200 hover:text-blue-600 transition-all">
-								<span class="text-red-500"><%=FilePlusIcon("w-5 h-5")%> </span>
-								VIEW DOCUMENT <span class="opacity-20"><%=ExternalLinkIcon("w-3 h-3")%></span>
+							<a id="modalAttachLink" href="#" target="_blank" class="inline-flex items-center gap-3 bg-white border-2 border-slate-100 px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-blue-200 transition-all text-xs font-bold text-slate-800">
+								<span class="text-red-500"><%=FilePlusIcon("w-5 h-5")%> </span> VIEW DOCUMENT <span class="opacity-20"><%=ExternalLinkIcon("w-3 h-3")%></span>
 							</a>
 						</div>
-						<div id="noAttachLabel"
-							class="text-s text-slate-500 font-bold italic py-2">No
-							document attached</div>
+						<div id="noAttachLabel" class="text-s text-slate-500 font-bold italic py-2">No document attached</div>
 						<div class="mb-[18px]"></div>
 					</div>
 				</div>
 
-				<div>
-					<span class="info-label">Employee Reason</span>
-					<p
-						class="text-sm text-slate-500 mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-100 font-medium leading-relaxed italic"
-						id="popReason"></p>
-				</div>
+				<div><span class="info-label">Employee Reason</span><p class="text-sm text-slate-500 mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-100 font-medium leading-relaxed italic" id="popReason"></p></div>
 
 				<div id="dynamicBox" class="hidden">
 					<div class="flex items-center gap-3 mb-4">
 						<div class="w-1 h-4 bg-blue-600 rounded-full"></div>
-						<h4
-							class="text-[13px] font-black text-slate-600 uppercase tracking-widest">Metadata
-							Attributes (Specific To Type)</h4>
+						<h4 class="text-[13px] font-black text-slate-600 uppercase tracking-widest"> Additional Information</h4>
 					</div>
 					<div class="dynamic-meta-container space-y-4" id="dynamicGrid"></div>
 				</div>
 
-				<div>
-					<span class="info-label">Manager Remark</span>
-					<p class="text-sm text-blue-600 italic font-semibold"
-						id="popComment"></p>
-				</div>
+				<div><span class="info-label">Manager Remark</span><p class="text-sm text-blue-600 italic font-semibold" id="popComment"></p></div>
 			</div>
 		</div>
 	</div>
@@ -911,69 +810,35 @@ to {
 	<!-- EDIT MODAL -->
 	<div class="modal-overlay" id="editOverlay">
 		<div class="modal-content" style="max-width: 650px;">
-			<button type="button" class="btn-close"
-				onclick="closeModal('editOverlay')"><%=XCircleIcon("w-6 h-6")%></button>
+			<button type="button" class="btn-close" onclick="closeModal('editOverlay')"><%=XCircleIcon("w-6 h-6")%></button>
 			<div class="modal-body">
-				<h3
-					class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-8 pr-12 border-b border-slate-100 pb-4">Edit
-					Application</h3>
+				<h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-8 pr-12 border-b border-slate-100 pb-4">Edit Application</h3>
 				<form id="editForm" class="space-y-6">
 					<input type="hidden" name="leaveId" id="editLeaveId">
-					<div class="form-group">
-						<label class="info-label">Leave Category</label><select
-							name="leaveType" id="editType"
-							class="w-full pointer-events-none bg-slate-50 text-slate-400"></select>
-					</div>
+					<div class="form-group"><label class="info-label">Leave Category</label><select name="leaveType" id="editType" class="w-full pointer-events-none bg-slate-50 text-slate-400"></select></div>
 					<div class="grid grid-cols-2 gap-6">
-						<div class="form-group">
-							<label class="info-label">Start Date</label><input type="date"
-								name="startDate" id="editStart"
-								class="w-full p-2 border rounded-xl premium-input"
-								onchange="validateEdit()">
-						</div>
-						<div class="form-group">
-							<label class="info-label">End Date</label><input type="date"
-								name="endDate" id="editEnd"
-								class="w-full p-2 border rounded-xl premium-input"
-								onchange="validateEdit()">
-						</div>
+						<div class="form-group"><label class="info-label">Start Date</label><input type="date" name="startDate" id="editStart" class="w-full p-2 border rounded-xl premium-input" onchange="validateEdit()"></div>
+						<div class="form-group"><label class="info-label">End Date</label><input type="date" name="endDate" id="editEnd" class="w-full p-2 border rounded-xl premium-input" onchange="validateEdit()"></div>
 					</div>
 					<div class="form-group">
-						<label class="info-label">Duration Type</label> <select
-							name="duration" id="editDuration" class="w-full premium-input"
-							onchange="validateEdit()">
+						<label class="info-label">Duration Type</label> <select name="duration" id="editDuration" class="w-full premium-input" onchange="validateEdit()">
 							<option value="FULL_DAY">Full Day</option>
 							<option value="HALF_DAY_AM">Half Day (AM)</option>
 							<option value="HALF_DAY_PM">Half Day (PM)</option>
 						</select>
 					</div>
-
-					<!-- Dynamic Metadata Section for Edit -->
-					<div id="editDynamicBox"
-						class="hidden bg-slate-50 border border-slate-100 p-8 rounded-[24px] mb-8">
+					<div id="editDynamicBox" class="hidden bg-slate-50 border border-slate-100 p-8 rounded-[24px] mb-8">
 						<div class="flex items-center gap-3 mb-6">
 							<div class="w-1.5 h-5 bg-blue-600 rounded-full"></div>
-							<span
-								class="text-[11px] font-black text-blue-600 uppercase tracking-widest">Additional
-								Details Required</span>
+							<span class="text-[11px] font-black text-blue-600 uppercase tracking-widest">Additional Details Required</span>
 						</div>
-						<div id="editDynamicFields"
-							class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 items-start"></div>
+						<div id="editDynamicFields" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 items-start"></div>
 					</div>
-
-					<div class="form-group">
-						<label class="info-label">Personal Reason</label>
-						<textarea name="reason" id="editReason"
-							class="w-full h-24 border rounded-xl p-3"
-							placeholder="Briefly explain the reason for leave..."></textarea>
-					</div>
-					<div id="editValidationError"
-						class="text-[10px] font-black text-red-500 uppercase tracking-widest hidden"></div>
+					<div class="form-group"><label class="info-label">Personal Reason</label><textarea name="reason" id="editReason" class="w-full h-24 border rounded-xl p-3" placeholder="Briefly explain the reason for leave..."></textarea></div>
+					<div id="editValidationError" class="text-[10px] font-black text-red-500 uppercase tracking-widest hidden"></div>
 					<div class="flex gap-4 mt-8">
-						<button type="button" class="btn-modal-secondary flex-1"
-							onclick="closeModal('editOverlay')">Discard</button>
-						<button type="submit" id="editSubmitBtn"
-							class="btn-modal-primary flex-1">Update Application</button>
+						<button type="button" class="btn-modal-secondary flex-1" onclick="closeModal('editOverlay')">Discard</button>
+						<button type="submit" id="editSubmitBtn" class="btn-modal-primary flex-1">Update Application</button>
 					</div>
 				</form>
 			</div>
@@ -982,24 +847,17 @@ to {
 
 	<!-- CONFIRMATION MODAL -->
 	<div class="modal-overlay" id="confirmOverlay">
-		<div class="modal-content"
-			style="max-width: 450px; text-align: center;">
-			<button type="button" class="btn-close"
-				onclick="closeModal('confirmOverlay')"><%=XCircleIcon("w-6 h-6")%></button>
+		<div class="modal-content" style="max-width: 450px; text-align: center;">
+			<button type="button" class="btn-close" onclick="closeModal('confirmOverlay')"><%=XCircleIcon("w-6 h-6")%></button>
 			<div class="modal-body">
 				<div id="confIcon" class="mx-auto mb-6"></div>
-				<h3 id="confTitle"
-					class="text-xl font-black text-slate-800 tracking-tight uppercase mb-2">Confirm
-					Action</h3>
-				<p id="confMsg"
-					class="text-slate-500 font-medium mb-10 text-sm leading-relaxed"></p>
+				<h3 id="confTitle" class="text-xl font-black text-slate-800 tracking-tight uppercase mb-2">Confirm Action</h3>
+				<p id="confMsg" class="text-slate-500 font-medium mb-10 text-sm leading-relaxed"></p>
 				<form id="confForm">
 					<input type="hidden" name="id" id="confId">
 					<div class="flex gap-4">
-						<button type="button" class="btn-modal-secondary flex-1"
-							onclick="closeModal('confirmOverlay')">Cancel</button>
-						<button type="submit" id="confBtn"
-							class="btn-modal-primary flex-1">Confirm</button>
+						<button type="button" class="btn-modal-secondary flex-1" onclick="closeModal('confirmOverlay')">Cancel</button>
+						<button type="submit" id="confBtn" class="btn-modal-primary flex-1">Confirm</button>
 					</div>
 				</form>
 			</div>
@@ -1032,7 +890,7 @@ function viewDetails(btn) {
     document.getElementById('popDays').textContent = d.days;
     document.getElementById('popApplied').textContent = d.applied;
     document.getElementById('popReason').textContent = d.reason || "No reason provided.";
-    document.getElementById('popComment').textContent = d.comment && d.comment !== "-" ? d.comment : "Pending Review.";
+    document.getElementById('popComment').textContent = d.comment && d.comment !== "-" ? d.comment : "No remarks available";
 
     const tag = document.getElementById('popTypeIdTag');
     if(d.typeid && d.typeid !== "null") { tag.textContent = "ID: " + d.typeid; tag.style.display = 'inline-block'; } 
@@ -1045,7 +903,6 @@ function viewDetails(btn) {
         document.getElementById('modalAttachLink').href = CTX + "/ViewAttachment?id=" + d.id;
     } else { abox.classList.add('hidden'); noAttach.classList.remove('hidden'); }
 
-    const dBox = document.getElementById('dynamicBox');
     const grid = document.getElementById('dynamicGrid');
     grid.innerHTML = ""; let count = 0;
     const addAttr = (label, val) => {
@@ -1060,7 +917,7 @@ function viewDetails(btn) {
     else if (code.includes("MATERNITY")) { addAttr("Consulation Clinic", d.med); addAttr("Expected Due Date", d.evt); addAttr("Week Pregenancy", d.pre); }
     else if (code.includes("PATERNITY")) { addAttr("Spouse Name", d.spo); addAttr("Medical Location", d.med); addAttr("Date of Birth", d.evt); }
     else if (code.includes("EMERGENCY")) { addAttr("Emergency Category", d.cat); addAttr("Emergency Contact", d.cnt); }
-    dBox.classList.toggle('hidden', count === 0);
+    document.getElementById('dynamicBox').classList.toggle('hidden', count === 0);
     document.getElementById('detailModal').classList.add('show');
 }
 
@@ -1073,48 +930,28 @@ async function openEditModal(id) {
     try {
         const sourceBtn = document.querySelector('.lr-id[data-id="' + id + '"]');
         const d = sourceBtn.dataset;
-        
-        // Metadata captured from the data attributes of the table record
-        const meta = { 
-            med: d.med || "", 
-            ref: d.ref || "", 
-            cat: d.cat || "", 
-            cnt: d.cnt || "", 
-            spo: d.spo || "", 
-            pre: d.pre || "", 
-            evt: d.evt || "", 
-            dis: d.dis || "" 
-        };
-
+        const meta = { med: d.med || "", ref: d.ref || "", cat: d.cat || "", cnt: d.cnt || "", spo: d.spo || "", pre: d.pre || "", evt: d.evt || "", dis: d.dis || "" };
         const res = await fetch(CTX + "/EditLeave?id=" + id, { headers: {'Accept': 'application/json'} });
         const data = await res.json();
-        
         const startInput = document.getElementById('editStart');
         const endInput = document.getElementById('editEnd');
-        startInput.min = today; endInput.min = today;
+        startInput.min = today;
+        endInput.min = today;
+        
+        // Map data to DOM Elements
+        document.getElementById('modalAction').value = "UPDATE";
+        document.getElementById('modalId').value = id;
+        nameInput = document.getElementById('modalName');
+        if (nameInput) nameInput.value = d.name;
+        
+        // Map date limits on change
+        startEl.value = d.start;
+        endEl.value = d.end;
 
-        const selectedType = data.leaveTypes.find(t => t.id == data.leaveTypeId);
-        const typeCode = selectedType ? (selectedType.code || selectedType.label || "") : "";
-        
-        // Populate the dynamic metadata fields for editing
-        handleEditDynamicFields(typeCode, meta);
-
-        document.getElementById('editLeaveId').value = data.leaveId;
-        startInput.value = data.startDate;
-        endInput.value = data.endDate;
-        document.getElementById('editReason').value = data.reason || "";
-        
-        let dur = data.duration || "FULL_DAY";
-        if(dur === 'HALF_DAY') dur = data.halfSession === 'PM' ? 'HALF_DAY_PM' : 'HALF_DAY_AM';
-        document.getElementById('editDuration').value = dur;
-        
-        const ts = document.getElementById('editType');
-        ts.innerHTML = "";
-        data.leaveTypes.forEach(t => {
-            let o = new Option(t.label || t.code, t.id);
-            if(o.value == data.leaveTypeId) o.selected = true;
-            ts.add(o);
-        });
+        const roleBadge = document.getElementById('detailRoleBadge');
+        if (roleBadge) {
+            roleBadge.innerText = d.role;
+        }
 
         activeBalance = parseFloat(data.balance) || 0; 
         originalDays = (dur.startsWith('HALF_DAY')) ? 0.5 : estimateWorkingDays(new Date(data.startDate), new Date(data.endDate));
@@ -1130,16 +967,12 @@ function estimateWorkingDays(start, end) {
 }
 
 function validateEdit() {
-    const startInput = document.getElementById('editStart');
-    const endInput = document.getElementById('editEnd');
-    const durTypeEl = document.getElementById('editDuration');
-    const btn = document.getElementById('editSubmitBtn');
-    const err = document.getElementById('editValidationError');
-    if (!startInput || !endInput) return;
+    const startInput = document.getElementById('editStart'); const endInput = document.getElementById('editEnd');
+    const durTypeEl = document.getElementById('editDuration'); const btn = document.getElementById('editSubmitBtn');
+    const err = document.getElementById('editValidationError'); if (!startInput || !endInput) return;
     const sStr = startInput.value; const eStr = endInput.value; const durType = durTypeEl.value;
     if (!sStr || !eStr) return;
-    endInput.min = sStr;
-    const start = new Date(sStr); const end = new Date(eStr);
+    endInput.min = sStr; const start = new Date(sStr); const end = new Date(eStr);
     let newDays = (durType.startsWith('HALF_DAY')) ? 0.5 : estimateWorkingDays(start, end);
     if (durType.startsWith('HALF_DAY')) { endInput.value = sStr; endInput.readOnly = true; endInput.style.backgroundColor = "#f1f5f9"; } 
     else { endInput.readOnly = false; endInput.style.backgroundColor = "#fff"; }
@@ -1154,19 +987,14 @@ function validateEdit() {
 
 document.getElementById('editForm').onsubmit = async function(e) {
     e.preventDefault();
-    const btn = document.getElementById('editSubmitBtn');
-    btn.disabled = true; btn.textContent = "WAIT...";
+    const btn = document.getElementById('editSubmitBtn'); btn.disabled = true; btn.textContent = "WAIT...";
     const fd = new URLSearchParams(new FormData(this));
     const d = fd.get('duration');
     if (d.startsWith('HALF_DAY')) { fd.set('duration', 'HALF_DAY'); fd.set('halfSession', d.includes('AM') ? 'AM' : 'PM'); }
     try {
         const res = await fetch(CTX + "/EditLeave", { method: 'POST', body: fd, headers: {'Content-Type': 'application/x-www-form-urlencoded'} });
-        const txt = await res.text();
-        if (txt.trim() === "OK") window.location.reload();
-        else { 
-            const err = document.getElementById('editValidationError');
-            err.textContent = txt; err.classList.remove('hidden'); btn.disabled = false; btn.textContent = "UPDATE APPLICATION";
-        }
+        if ((await res.text()).trim() === "OK") window.location.reload();
+        else { btn.disabled = false; btn.textContent = "UPDATE APPLICATION"; }
     } catch (err) { btn.disabled = false; btn.textContent = "UPDATE APPLICATION"; }
 };
 
@@ -1176,32 +1004,25 @@ function handleEditDynamicFields(code, meta) {
     if (!container || !box) return;
     container.innerHTML = ""; box.classList.add('hidden');
     const typeCode = (code || "").toUpperCase();
-    
-    // Logic for rendering specific metadata fields based on category
     if (typeCode.includes("SICK") || typeCode === "SL") { 
         addModalInput("medicalFacility", "Clinic / Hospital Name", meta.med, "E.G. KLINIK KESIHATAN"); 
         addModalInput("refSerialNo", "MC Serial Number", meta.ref, "E.G. MC88721"); 
         box.classList.remove('hidden'); 
-    } 
-    else if (typeCode.includes("EMERGENCY") || typeCode === "EL") { 
-        addModalSelect("emergencyCategory", "Emergency Category", 
-        		[{v: "ACCIDENT", l: "ACCIDENT"}, {v: "DEATH", l: "DEATH (FAMILY)"}, {v: "DISASTER", l: "NATURAL DISASTER"}, {v: "MEDICAL FAMILY", l: "FAMILY MEDICAL EMERGENCY"}, {v: "OTHER", l: "OTHERS"}], meta.cat); 
+    } else if (typeCode.includes("EMERGENCY") || typeCode === "EL") { 
+        addModalSelect("emergencyCategory", "Emergency Category", [{v: "ACCIDENT", l: "ACCIDENT"}, {v: "DEATH", l: "DEATH (FAMILY)"}, {v: "DISASTER", l: "NATURAL DISASTER"}, {v: "MEDICAL FAMILY", l: "FAMILY MEDICAL EMERGENCY"}, {v: "OTHER", l: "OTHERS"}], meta.cat); 
         addModalInput("emergencyContact", "Emergency Contact No", meta.cnt, "01X-XXXXXXX"); 
         box.classList.remove('hidden'); 
-    }
-    else if (typeCode.includes("HOSPITAL") || typeCode === "HL") { 
+    } else if (typeCode.includes("HOSPITAL") || typeCode === "HL") { 
         addModalInput("medicalFacility", "Hospital Name", meta.med, "HOSPITAL NAME"); 
         addModalInput("eventDate", "Admission Date", formatDateForInput(meta.evt), "", "date"); 
         addModalInput("dischargeDate", "Discharge Date", formatDateForInput(meta.dis), "", "date"); 
         box.classList.remove('hidden'); 
-    }
-    else if (typeCode.includes("MATERNITY") || typeCode === "ML") { 
+    } else if (typeCode.includes("MATERNITY") || typeCode === "ML") { 
         addModalInput("medicalFacility", "Consultation Clinic", meta.med, "CLINIC NAME"); 
         addModalInput("eventDate", "Expected Due Date", formatDateForInput(meta.evt), "", "date"); 
         addModalInput("weekPregnancy", "Weeks of Pregnancy", meta.pre, "E.G. 32", "number"); 
         box.classList.remove('hidden'); 
-    }
-    else if (typeCode.includes("PATERNITY") || typeCode === "PL") { 
+    } else if (typeCode.includes("PATERNITY") || typeCode === "PL") { 
         addModalInput("spouseName", "Spouse Full Name", meta.spo, "SPOUSE NAME"); 
         addModalInput("medicalFacility", "Hospital Location", meta.med, "HOSPITAL NAME/CITY"); 
         addModalInput("eventDate", "Date of Delivery", formatDateForInput(meta.evt), "", "date"); 
@@ -1211,11 +1032,9 @@ function handleEditDynamicFields(code, meta) {
 
 function addModalInput(name, label, val, placeholder, type = "text") {
     const div = document.createElement('div'); div.className = "flex flex-col w-full";
-    const phText = placeholder || '';
     const onInputAttr = (type === 'text') ? ' oninput="this.value = this.value.toUpperCase()"' : '';
-    
     div.innerHTML = '<label class="info-label">' + label + ' <span class="text-red-500">*</span></label>' +
-        '<input type="' + type + '" name="' + name + '" value="' + val + '" placeholder="' + phText + '" class="premium-input w-full" required' + onInputAttr + '>';
+        '<input type="' + type + '" name="' + name + '" value="' + val + '" placeholder="' + (placeholder||'') + '" class="premium-input w-full" required' + onInputAttr + '>';
     document.getElementById('editDynamicFields').appendChild(div);
 }
 
@@ -1230,49 +1049,33 @@ function formatDateForInput(dateStr) {
     if (!dateStr || dateStr === "N/A" || !dateStr.includes("/")) return "";
     const parts = dateStr.split("/"); return parts[2] + "-" + parts[1] + "-" + parts[0];
 }
-function askConfirm(action, id, recordId) {
-    const t = document.getElementById('confTitle');
-    const m = document.getElementById('confMsg');
-    const f = document.getElementById('confForm');
-    const b = document.getElementById('confBtn');
-    const ic = document.getElementById('confIcon');
-    document.getElementById('confId').value = id;
 
+function askConfirm(action, id, recordId) {
+    const t = document.getElementById('confTitle'); const m = document.getElementById('confMsg');
+    const f = document.getElementById('confForm'); const b = document.getElementById('confBtn');
+    const ic = document.getElementById('confIcon'); document.getElementById('confId').value = id;
     if(action === 'DELETE') {
-        t.innerText = "DELETE RECORD?";
-        m.innerHTML = "Are you sure you want to delete <b class='text-slate-900'>" + recordId + "</b>? This pending leave application will be removed permanently.";
-        f.dataset.action = CTX + "/DeleteLeave";
-        b.className = "btn-modal-primary flex-1 bg-red-600 hover:bg-red-700 shadow-red-100";
-        ic.innerHTML = `<div class='w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 text-3xl mx-auto shadow-inner'><%= TrashIcon("w-10 h-10") %></div>`;
+        t.innerText = "DELETE RECORD?"; m.innerHTML = "Are you sure you want to delete <b class='text-slate-900'>" + recordId + "</b>?";
+        f.dataset.action = CTX + "/DeleteLeave"; b.className = "btn-modal-primary flex-1 bg-red-600 hover:bg-red-700";
+        ic.innerHTML = `<div class='w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 mx-auto'><%=TrashIcon("w-10 h-10")%></div>`;
     } else {
-        t.innerText = "REQUEST CANCELLATION?";
-        m.innerHTML = "Are you sure you want to request cancellation for <b class='text-slate-900'>" + recordId + "</b>? This will require manager approval.";
-        f.dataset.action = CTX + "/CancelLeave";
-        b.className = "btn-modal-primary flex-1 bg-orange-600 hover:bg-orange-700 shadow-orange-100";
-        ic.innerHTML = `<div class='w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 text-3xl mx-auto shadow-inner'><%= RotateCcwIcon("w-10 h-10") %></div>`;
+        t.innerText = "REQUEST CANCELLATION?"; m.innerHTML = "Are you sure you want to request cancellation for <b class='text-slate-900'>" + recordId + "</b>?";
+        f.dataset.action = CTX + "/CancelLeave"; b.className = "btn-modal-primary flex-1 bg-orange-600 hover:bg-orange-700";
+        ic.innerHTML = `<div class='w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 mx-auto'><%=RotateCcwIcon("w-10 h-10")%></div>`;
     }
     document.getElementById('confirmOverlay').classList.add('show');
 }
 
 document.getElementById('confForm').onsubmit = async function(e) {
     e.preventDefault();
-    const btn = document.getElementById('confBtn');
-    btn.disabled = true;
-    btn.textContent = "WAIT...";
+    const btn = document.getElementById('confBtn'); btn.disabled = true; btn.textContent = "WAIT...";
     try {
         const res = await fetch(this.dataset.action, { method: 'POST', body: new URLSearchParams(new FormData(this)), headers: {'Content-Type': 'application/x-www-form-urlencoded'} });
-        if (res.ok && (await res.text()).trim() === "OK") window.location.reload();
-    } catch (err) {
-        btn.disabled = false;
-        btn.textContent = "CONFIRM";
-    }
+        if ((await res.text()).trim() === "OK") window.location.reload();
+    } catch (err) { btn.disabled = false; btn.textContent = "CONFIRM"; }
 };
 
-window.onclick = (e) => { 
-    if (e.target.classList.contains('modal-overlay')) {
-        closeModal(e.target.id);
-    }
-}
+window.onclick = (e) => { if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id); }
 
 document.addEventListener('input', function(e) {
     if(e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.target.type === 'text')) {
