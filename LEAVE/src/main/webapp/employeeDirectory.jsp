@@ -213,12 +213,11 @@ th {
 	text-align: center;
 }
 
-/* ✅ RESOLVED SPECIFICATION FOR THE MODAL STRUCTURE AND ROUNDED RADIUS */
+/* ✅ SPECS: OPTIMIZED FOR A NO-SCROLL COMPACT LAYOUT WITH THE DESIRED 32PX CORNER RADIUS */
 .detail-modal-content {
 	background: white;
 	width: 100%;
 	max-width: 750px;
-	max-height: 90vh;
 	border-radius: 32px;
 	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
 	overflow: hidden;
@@ -450,12 +449,12 @@ th {
 			</div>
 		</div>
 
-		<!-- Detailed Profile Modal -->
+		<!-- Detailed Profile Modal (Premium, clean layout with scrollable details) -->
 		<div id="detailModal" class="modal-overlay">
 			<div class="detail-modal-content">
 				<!-- Header Graphic Band with Title inside the solid Blue area -->
 				<div class="bg-[#2563eb] h-28 relative flex items-start pt-6 px-8 shrink-0">
-					<span class="text-white font-extrabold text-xxl uppercase tracking-widest">Profile Details</span>
+					<span class="text-white font-extrabold text-sm uppercase tracking-widest">Profile Details</span>
 					<button type="button" onclick="closeDetailModal()" class="absolute top-5 right-6 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all">
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
 					</button>
@@ -469,7 +468,6 @@ th {
 								<!-- Dynamic image or vector SVG loaded here -->
 							</div>
 							<div class="text-left pt-1 min-w-0">
-								<!-- Name Styled EXACTLY as requested: Slate 800, tight tracking, uppercase, font-black, size 2xl, and tight line height -->
 								<h3 id="detailFullname" class="text-2xl font-black text-slate-800 uppercase tracking-tight leading-tight mb-2 break-words"></h3>
 								<div class="flex flex-wrap items-center gap-2">
 									<span id="detailRoleBadge" class="badge"></span>
@@ -483,7 +481,7 @@ th {
 					</div>
 				</div>
 
-				<!-- Detailed Field Data (Scroll Container is isolated from headers to prevent name shifts from altering heights) -->
+				<!-- Detailed Field Data (Scroll Container is isolated from headers to prevent layout breaking) -->
 				<div id="detailScrollContainer" class="flex-1 overflow-y-auto p-8 space-y-4 text-left">
 					<!-- Personal Secure Data Section -->
 					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
@@ -515,43 +513,12 @@ th {
 						</div>
 					</div>
 
-					<!-- Employment Data -->
-					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">EMPLOYMENT PERMISSIONS</h4>
-						<div class="grid grid-cols-2 gap-4">
-							<div>
-								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Role Type</label>
-								<span id="detailRole" class="text-xs font-bold text-slate-700"></span>
-							</div>
-							<div>
-								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Date Joined</label>
-								<span id="detailHireDate" class="text-xs font-semibold text-slate-700"></span>
-							</div>
-						</div>
-					</div>
-
-					<!-- Complete Addresses -->
+					<!-- Combined Residential Address Section -->
 					<div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
 						<h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">RESIDENTIAL ADDRESS</h4>
-						<div class="space-y-3">
-							<div>
-								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Street Address</label>
-								<span id="detailStreet" class="text-xs font-semibold text-slate-700 uppercase"></span>
-							</div>
-							<div class="grid grid-cols-3 gap-4">
-								<div class="col-span-2">
-									<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">City</label>
-									<span id="detailCity" class="text-xs font-semibold text-slate-700 uppercase"></span>
-								</div>
-								<div>
-									<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Postal Code</label>
-									<span id="detailPostalCode" class="text-xs font-semibold text-slate-700"></span>
-								</div>
-							</div>
-							<div>
-								<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">State</label>
-								<span id="detailState" class="text-xs font-semibold text-slate-700 uppercase"></span>
-							</div>
+						<div>
+							<label class="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Address Details</label>
+							<span id="detailCombinedAddress" class="text-xs font-semibold text-slate-700 uppercase leading-relaxed block"></span>
 						</div>
 					</div>
 				</div>
@@ -637,12 +604,16 @@ th {
             document.getElementById('detailGender').innerText = gender;
             document.getElementById('detailEmail').innerText = email;
             document.getElementById('detailPhone').innerText = phone;
-            document.getElementById('detailRole').innerText = role;
-            document.getElementById('detailHireDate').innerText = hiredate;
-            document.getElementById('detailStreet').innerText = street;
-            document.getElementById('detailCity').innerText = city;
-            document.getElementById('detailPostalCode').innerText = postalcode;
-            document.getElementById('detailState').innerText = state;
+
+            // Secure Address Assembly & Formatting logic combining Street, Postal Code, City, and State into 1 line
+            const addrParts = [];
+            if (street && street !== "---" && street !== "null" && street.trim() !== "") addrParts.push(street.trim());
+            if (postalcode && postalcode !== "---" && postalcode !== "null" && postalcode.trim() !== "") addrParts.push(postalcode.trim());
+            if (city && city !== "---" && city !== "null" && city.trim() !== "") addrParts.push(city.trim());
+            if (state && state !== "---" && state !== "null" && state.trim() !== "") addrParts.push(state.trim());
+            
+            const combinedAddr = addrParts.length > 0 ? addrParts.join(", ").toUpperCase() : "NO ADDRESS RECORDED.";
+            document.getElementById('detailCombinedAddress').innerText = combinedAddr;
 
             // Role Badge styling
             const roleBadge = document.getElementById('detailRoleBadge');

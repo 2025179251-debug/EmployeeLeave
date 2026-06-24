@@ -56,7 +56,7 @@ public class RegisterEmployee extends HttpServlet {
 
 			String cityCheck = request.getParameter("city");
 			if (cityCheck != null && cityCheck.matches(".*\\d.*")) {
-				response.sendRedirect("RegisterEmployee?error=" + url("City name cannot contain numbers."));
+				response.sendRedirect("RegisterEmployee?error=" + url("City name cannot contain numbers"));
 				return;
 			}
 
@@ -69,9 +69,9 @@ public class RegisterEmployee extends HttpServlet {
 				initializeBalancesForNewUser(newUser.getEmail());
 
 				response.sendRedirect(
-						"RegisterEmployee?msg=" + url("Employee registered and leave balances initialized."));
+						"RegisterEmployee?msg=" + url("Employee registered and leave balances initialized"));
 			} else {
-				response.sendRedirect("RegisterEmployee?error=" + url("Failed to create account."));
+				response.sendRedirect("RegisterEmployee?error=" + url("Failed to create account"));
 			}
 
 		} catch (Exception e) {

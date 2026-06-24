@@ -106,7 +106,7 @@ Date todayMidnight = calToday.getTime();
 <head>
 <meta charset="UTF-8">
 <title>LMS | My Leave History</title>
-<link rel="stylesheet"
+<link class="hidden" rel="stylesheet"
 	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <link
@@ -935,28 +935,36 @@ async function openEditModal(id) {
         const data = await res.json();
         const startInput = document.getElementById('editStart');
         const endInput = document.getElementById('editEnd');
+        
         startInput.min = today;
         endInput.min = today;
         
         // Map data to DOM Elements
-        document.getElementById('modalAction').value = "UPDATE";
-        document.getElementById('modalId').value = id;
-        nameInput = document.getElementById('modalName');
-        if (nameInput) nameInput.value = d.name;
-        
-        // Map date limits on change
-        startEl.value = d.start;
-        endEl.value = d.end;
+        document.getElementById('editLeaveId').value = id;
+        startInput.value = data.startDate;
+        endInput.value = data.endDate;
+        document.getElementById('editReason').value = data.reason || "";
 
-        const roleBadge = document.getElementById('detailRoleBadge');
-        if (roleBadge) {
-            roleBadge.innerText = d.role;
-        }
+        let dur = data.duration || "FULL_DAY";
+        if(dur === 'HALF_DAY') dur = data.halfSession === 'PM' ? 'HALF_DAY_PM' : 'HALF_DAY_AM';
+        document.getElementById('editDuration').value = dur;
+
+        // Select leave type in editType
+        const editTypeSel = document.getElementById('editType');
+        editTypeSel.innerHTML = "";
+        const opt = new Option(data.leaveTypeName || d.type, data.leaveTypeId);
+        opt.selected = true;
+        editTypeSel.add(opt);
+
+        handleEditDynamicFields(data.leaveTypeCode || d.type, meta);
 
         activeBalance = parseFloat(data.balance) || 0; 
         originalDays = (dur.startsWith('HALF_DAY')) ? 0.5 : estimateWorkingDays(new Date(data.startDate), new Date(data.endDate));
         validateEdit(); 
-    } catch (e) { closeModal('editOverlay'); }
+    } catch (e) { 
+        console.error(e);
+        closeModal('editOverlay'); 
+    }
 }
 
 function estimateWorkingDays(start, end) {

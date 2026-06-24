@@ -1,6 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page
-	import="java.util.*, bean.Holiday, java.time.format.DateTimeFormatter"%>
+<%@ page import="java.util.*, bean.Holiday, java.time.format.DateTimeFormatter"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ include file="icon.jsp"%>
 
@@ -8,7 +7,8 @@
     // ADMIN GUARD
     HttpSession ses = request.getSession(false);
     if (ses == null || ses.getAttribute("empid") == null || !"ADMIN".equalsIgnoreCase(String.valueOf(ses.getAttribute("role")))) {
-        response.sendRedirect("login.jsp"); return;
+        response.sendRedirect("login.jsp"); 
+        return;
     }
 
     // Data from Controller
@@ -30,9 +30,7 @@
 <title>Holiday Calendar | Admin Access</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<link
-	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -368,8 +366,7 @@ th {
 <body class="flex">
 	<jsp:include page="sidebar.jsp" />
 
-	<main
-		class="flex-1 ml-20 lg:ml-64 min-h-screen transition-all duration-300">
+	<main class="flex-1 ml-20 lg:ml-64 min-h-screen transition-all duration-300">
 		<jsp:include page="topbar.jsp" />
 
 		<div class="pageWrap">
@@ -384,28 +381,25 @@ th {
 				</button>
 			</div>
 
+			<%-- Securely Output Errors/Messages using standard JSTL Core mapping (Blocks reflected XSS attacks) --%>
 			<% if (error != null) { %>
-			<div
-				class="alert-box bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
+			<div class="alert-box bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
 				<%= AlertIcon("w-5 h-5") %>
-				<%= error %>
+				<span class="block"><c:out value="${param.error}"/></span>
 			</div>
 			<% } %>
 			<% if (msg != null) { %>
-			<div
-				class="alert-box bg-emerald-50 border border-emerald-100 text-emerald-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
+			<div class="alert-box bg-emerald-50 border border-emerald-100 text-emerald-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
 				<%= CheckCircleIcon("w-5 h-5") %>
-				<%= msg %>
+				<span class="block"><c:out value="${param.msg}"/></span>
 			</div>
 			<% } %>
 
 			<div class="card">
 				<div class="cardHead">
 					<span>System Holiday List</span>
-					<div
-						class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-						Total Records:
-						<%= (holidays != null ? holidays.size() : 0) %>
+					<div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+						Total Records: <%= (holidays != null ? holidays.size() : 0) %>
 					</div>
 				</div>
 				<div class="overflow-x-auto">
@@ -421,9 +415,9 @@ th {
 						<tbody>
 							<% if (holidays == null || holidays.isEmpty()) { %>
 							<tr>
-								<td colspan="4"
-									class="py-24 text-center text-slate-300 font-bold uppercase text-xs italic tracking-widest">No
-									holidays configured</td>
+								<td colspan="4" class="py-24 text-center text-slate-300 font-bold uppercase text-xs italic tracking-widest">
+									No holidays configured
+								</td>
 							</tr>
 							<% } else { 
                                 for (Holiday h : holidays) { 
@@ -436,36 +430,44 @@ th {
                                     
                                     boolean isHighlighted = String.valueOf(h.getId()).equals(highlightId);
                             %>
-							<tr id="holiday_row_<%= h.getId() %>"
-								class="<%= isHighlighted ? "row-highlight" : "hover:bg-slate-50/50" %> transition-all">
+							<tr id="holiday_row_<%= h.getId() %>" class="<%= isHighlighted ? "row-highlight" : "hover:bg-slate-50/50" %> transition-all">
 								<td>
-									<div
-										class="font-bold text-slate-800 text-sm uppercase flex items-center">
-										<%= h.getName() %>
-										<% if (isHighlighted) { %><span class="just-now-badge">JUST
-											NOW</span>
+									<div class="font-bold text-slate-800 text-sm uppercase flex items-center">
+										<%-- XSS Protection Wrapper around stored names --%>
+										<c:set var="currentHolidayName" value="<%= h.getName() %>"/>
+										<c:out value="${currentHolidayName}"/>
+										
+										<% if (isHighlighted) { %>
+											<span class="just-now-badge">JUST NOW</span>
 										<% } %>
 									</div>
 								</td>
-								<td><span class="pill <%= typeClass %>"><%= h.getType() %></span></td>
 								<td>
-									<div
-										class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+									<span class="pill <%= typeClass %>">
+										<c:set var="currentHolidayType" value="<%= h.getType() %>"/>
+										<c:out value="${currentHolidayType}"/>
+									</span>
+								</td>
+								<td>
+									<div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
 										<%= CalendarIcon("w-3.5 h-3.5 text-blue-500") %>
-										<%= dateDisplay %>
+										<c:set var="currentHolidayDate" value="<%= dateDisplay %>"/>
+										<c:out value="${currentHolidayDate}"/>
 									</div>
 								</td>
 								<td style="text-align: right">
 									<div class="flex justify-end gap-2">
+										<%-- Secure argument injection escaping any special structural quotes --%>
 										<button
-											onclick="openModal('UPDATE', '<%= h.getId() %>', '<%= h.getName() %>', '<%= dateIso %>', '<%= h.getType() %>')"
+											onclick="openModal('UPDATE', '<%= h.getId() %>', '<c:out value="${currentHolidayName}"/>', '<%= dateIso %>', '<%= h.getType() %>')"
 											class="action-btn btn-edit" title="Edit">
 											<%= EditIcon("w-3.5 h-3.5") %>
 										</button>
-										<form action="ManageHoliday" method="POST"
-											id="formDelete_<%= h.getId() %>" style="display: inline">
-											<input type="hidden" name="action" value="DELETE"> <input
-												type="hidden" name="holidayId" value="<%= h.getId() %>">
+										<form action="ManageHoliday" method="POST" id="formDelete_<%= h.getId() %>" style="display: inline">
+											<input type="hidden" name="action" value="DELETE"> 
+											<input type="hidden" name="holidayId" value="<%= h.getId() %>">
+											<%-- CSRF Safety standard hidden parameter --%>
+											<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 											<button type="button"
 												onclick="triggerConfirm('DELETE', 'formDelete_<%= h.getId() %>')"
 												class="action-btn btn-delete" title="Delete">
@@ -489,11 +491,12 @@ th {
 			<form action="ManageHoliday" method="POST" id="holidayForm" novalidate>
 				<input type="hidden" name="action" id="modalAction" value="ADD">
 				<input type="hidden" name="holidayId" id="modalId">
+				<%-- CSRF Safety standard hidden parameter --%>
+				<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 
 				<div class="modal-header">
 					<div>
-						<h3 class="text-base font-extrabold text-slate-900 uppercase"
-							id="modalTitle">Register Holiday</h3>
+						<h3 class="text-base font-extrabold text-slate-900 uppercase" id="modalTitle">Register Holiday</h3>
 					</div>
 					<button type="button" onclick="closeModal()"
 						class="text-slate-400 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"><%= XCircleIcon("w-6 h-6") %></button>
@@ -522,8 +525,7 @@ th {
 					</div>
 					<button type="button"
 						onclick="triggerConfirm(document.getElementById('modalAction').value, 'holidayForm')"
-						class="btn-submit shadow-lg shadow-slate-200">Confirm
-						Changes</button>
+						class="btn-submit shadow-lg shadow-slate-200">Confirm Changes</button>
 				</div>
 			</form>
 		</div>
@@ -531,21 +533,15 @@ th {
 
 	<!-- Action Confirmation Modal -->
 	<div class="modal-overlay" id="confirmModal">
-		<div class="modal-content"
-			style="width: 400px; text-align: center; padding: 32px;">
+		<div class="modal-content" style="width: 400px; text-align: center; padding: 32px;">
 			<div class="mb-4 flex justify-center">
-				<div id="confirmIconContainer"
-					class="w-16 h-16 rounded-full flex items-center justify-center"></div>
+				<div id="confirmIconContainer" class="w-16 h-16 rounded-full flex items-center justify-center"></div>
 			</div>
-			<h3 class="text-xl font-extrabold text-slate-900 uppercase mb-2"
-				id="confirmTitle">Confirm Action</h3>
-			<p class="text-sm text-slate-500 font-medium mb-8" id="confirmMsg">Are
-				you sure you want to proceed?</p>
+			<h3 class="text-xl font-extrabold text-slate-900 uppercase mb-2" id="confirmTitle">Confirm Action</h3>
+			<p class="text-sm text-slate-500 font-medium mb-8" id="confirmMsg">Are you sure you want to proceed?</p>
 			<div class="flex gap-3">
-				<button type="button" onclick="closeConfirm()"
-					class="btn-confirm-no flex-1">Cancel</button>
-				<button type="button" id="btnConfirmProceed"
-					class="btn-confirm-yes flex-1 shadow-lg">Proceed</button>
+				<button type="button" onclick="closeConfirm()" class="btn-confirm-no flex-1">Cancel</button>
+				<button type="button" id="btnConfirmProceed" class="btn-confirm-yes flex-1 shadow-lg">Proceed</button>
 			</div>
 		</div>
 	</div>
@@ -563,7 +559,15 @@ th {
                 }, 3000);
             });
 
-            // 2. Highlighting & Auto-Scroll Logic
+            // 2. Bound constraints for Date input limits dynamically (Avoids typing accidental years like '0026' or '1920')
+            const dateInput = document.getElementById('modalDate');
+            if (dateInput) {
+                const currentYear = new Date().getFullYear();
+                dateInput.min = `${currentYear - 5}-01-01`; // Allows up to 5 years past historic data audits
+                dateInput.max = `${currentYear + 10}-12-31`; // Protects from arbitrary forward anomalies
+            }
+
+            // 3. Highlighting & Auto-Scroll Logic
             const highlightId = "<%= highlightId != null ? highlightId : "" %>";
             if (highlightId) {
                 const row = document.getElementById('holiday_row_' + highlightId);
@@ -600,8 +604,9 @@ th {
             let cursorPosition = this.selectionStart;
             let originalLength = this.value.length;
 
-            // Alphanumeric + single space filter
-            let filteredValue = this.value.replace(/[^A-Z0-9\s]/g, '');
+            // Alphanumeric + Standard separators (allows standard holidays e.g. "NEW YEAR'S DAY", "MALAYSIA DAY (HARI MALAYSIA)")
+            let filteredValue = this.value.replace(/[^A-Z0-9\s\-\'\(\)\,\.\/]/g, '');
+            filteredValue = filteredValue.replace(/^\s+/g, ''); // strip leading spaces immediately
             filteredValue = filteredValue.replace(/\s\s+/g, ' '); // collapse consecutive spaces
 
             if (this.value !== filteredValue) {
@@ -631,12 +636,21 @@ th {
                     isFormValid = false;
                 }
 
-                // Validate Date Selection (Only checks if it is left blank)
+                // Validate Date Selection (Checks nulls and basic constraints bounds)
                 if (!dateInput.value) {
                     dateInput.classList.add('invalid-field');
                     isFormValid = false;
                 } else {
-                    dateInput.classList.remove('invalid-field');
+                    const chosenDateStr = dateInput.value;
+                    const chosenYear = parseInt(chosenDateStr.split('-')[0], 10);
+                    const currentYear = new Date().getFullYear();
+                    
+                    if (chosenYear < (currentYear - 5) || chosenYear > (currentYear + 10)) {
+                        dateInput.classList.add('invalid-field');
+                        isFormValid = false;
+                    } else {
+                        dateInput.classList.remove('invalid-field');
+                    }
                 }
 
                 // If check fails, trigger card shake (No alerts used)
@@ -656,7 +670,9 @@ th {
             const btnProceed = document.getElementById('btnConfirmProceed');
 
             // Reset dialog styles
-            btnProceed.className = "btn-confirm-yes flex-1 shadow-lg";
+            btnProceed.className = "btn-confirm-yes flex-1 shadow-lg cursor-pointer";
+            btnProceed.removeAttribute('disabled');
+            btnProceed.textContent = "Proceed";
             iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center";
 
             if (action === 'ADD') {
@@ -679,7 +695,15 @@ th {
                 btnProceed.classList.add("bg-red-600", "shadow-red-100");
             }
 
-            btnProceed.onclick = () => document.getElementById(currentTargetFormId).submit();
+            // Set onclick callback with Double-Submission Safe Locks
+            btnProceed.onclick = () => {
+                btnProceed.setAttribute('disabled', 'true');
+                btnProceed.style.opacity = '0.6';
+                btnProceed.style.cursor = 'not-allowed';
+                btnProceed.textContent = "Processing...";
+                document.getElementById(currentTargetFormId).submit();
+            };
+            
             document.getElementById('confirmModal').classList.add('show');
         }
 

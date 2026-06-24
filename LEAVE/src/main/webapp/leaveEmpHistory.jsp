@@ -139,7 +139,7 @@ body {
 	display: block;
 }
 
-/* ✅ ENHANCED COMPACT FILTER BAR LAYOUT PREVENTING IMAGE_3215B9 OVERFLOWS */
+/* ENHANCED COMPACT FILTER BAR LAYOUT PREVENTING IMAGE_3215B9 OVERFLOWS */
 .filter-bar {
 	background: #fff;
 	border: 1px solid var(--border);
@@ -594,7 +594,7 @@ th {
 											data-start="<%=r.getStartDate()%>"
 											data-end="<%=r.getEndDate()%>"
 											data-days="<%=r.getDurationDays()%>"
-											data-duration="<%=r.getDuration()%>"
+											data-duration="<%=r.getDuration() != null ? r.getDuration() : ""%>"
 											data-applied="<%=r.getAppliedOn()%>"
 											data-reason="<%=r.getReason()%>"
 											data-attachment="<%=r.getAttachment() != null ? r.getAttachment() : ""%>"
@@ -796,7 +796,11 @@ th {
         document.getElementById('popType').textContent = d.type;
         document.getElementById('popStart').textContent = d.start;
         document.getElementById('popEnd').textContent = d.end;
-        document.getElementById('popDuration').textContent = d.duration.replace(/_/g, ' ');
+        
+        // Safeguarded to prevent undefined replace errors
+        const durationText = d.duration ? d.duration.replace(/_/g, ' ') : "FULL DAY";
+        document.getElementById('popDuration').textContent = durationText;
+        
         document.getElementById('popDays').textContent = d.days;
         document.getElementById('popApplied').textContent = d.applied;
         document.getElementById('popReason').textContent = d.reason || "No reason provided.";
@@ -805,7 +809,7 @@ th {
         const abox = document.getElementById('attachBox');
         const noAttach = document.getElementById('noAttachLabel');
         if(d.attachment && d.attachment !== "" && d.attachment !== "null") {
-            box.classList.remove('hidden');
+            abox.classList.remove('hidden'); // ✅ FIXED: Changed "box" to "abox"
             noAttach.classList.add('hidden');
             document.getElementById('modalAttachLink').href = CTX + "/ViewAttachment?id=" + d.id;
         } else { 

@@ -2,10 +2,10 @@
 <%@ page import="java.util.*"%>
 <%@ page import="java.text.SimpleDateFormat"%>
 <%@ page import="bean.User"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ include file="icon.jsp"%>
 
 <%
-// SECURITY CHECK
 if (session.getAttribute("empid") == null) {
 	response.sendRedirect("login.jsp?error=Please login.");
 	return;
@@ -61,7 +61,6 @@ if (userObj != null) {
 	combinedAddress = !addrParts.isEmpty() ? String.join(", ", addrParts) : "NO ADDRESS RECORDED.";
 }
 
-// SECURE TOAST MESSAGE EXTRACTION (Accepts both "message" and "msg" keys)
 String jspMsg = "";
 if (request.getParameter("msg") != null) {
 	jspMsg = request.getParameter("msg");
@@ -79,7 +78,6 @@ if (request.getParameter("msg") != null) {
 	session.removeAttribute("message");
 }
 
-// Map "success" to a user-friendly full sentence
 if ("success".equalsIgnoreCase(jspMsg.trim())) {
 	jspMsg = "Profile updated successfully!";
 }
@@ -102,9 +100,7 @@ if (request.getParameter("error") != null) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Profile | Klinik Dr Mohamad</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link
-	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
-	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -307,38 +303,8 @@ h2.title {
 	color: #64748b;
 }
 
-/* 3-SECOND SUCCESS MESSAGE STYLE */
-#statusToast {
-	position: fixed;
-	top: -100px;
-	left: 50%;
-	transform: translateX(-50%);
-	padding: 16px 32px;
-	border-radius: 12px;
-	font-weight: 800;
-	font-size: 13px;
-	text-transform: uppercase;
-	z-index: 9999;
-	transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-	letter-spacing: 0.05em;
-}
-
-#statusToast.show {
-	top: 30px;
-}
-
-.toast-success {
-	background: #10b981;
-	color: white;
-}
-
-.toast-error {
-	background: #ef4444;
-	color: white;
+.alert-box {
+	transition: opacity 0.5s ease;
 }
 
 .input-hint {
@@ -353,19 +319,13 @@ h2.title {
 </head>
 <body class="flex">
 
-	<div id="statusToast">
-		<span id="toastIcon"></span> <span id="toastMessage"></span>
-	</div>
-
 	<jsp:include page="sidebar.jsp" />
 
-	<main
-		class="ml-20 lg:ml-64 min-h-screen flex-1 transition-all duration-300">
+	<main class="ml-20 lg:ml-64 min-h-screen flex-1 transition-all duration-300">
 		<jsp:include page="topbar.jsp" />
 
 		<div class="pageWrap">
-			<div
-				class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+			<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
 				<div>
 					<h2 class="title">MY ACCOUNT</h2>
 					<span class="sub-label">Employee profile settings</span>
@@ -373,8 +333,8 @@ h2.title {
 				<%
 				if (!editMode) {
 				%>
-				<a href="Profile?edit=1"
-					class="btn btn-blue shadow-lg shadow-blue-500/10"> <%=EditIcon("icon-sm")%>
+				<a href="Profile?edit=1" class="btn btn-blue shadow-lg shadow-blue-500/10"> 
+					<%=EditIcon("icon-sm")%>
 					Edit Profile
 				</a>
 				<%
@@ -382,14 +342,26 @@ h2.title {
 				%>
 			</div>
 
+			<% if (jspError != null && !jspError.isBlank()) { %>
+			<div class="alert-box bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
+				<%= AlertIcon("w-5 h-5") %>
+				<span class="block"><c:out value="<%= jspError %>"/></span>
+			</div>
+			<% } %>
+			<% if (jspMsg != null && !jspMsg.isBlank()) { %>
+			<div class="alert-box bg-emerald-50 border border-emerald-100 text-emerald-600 p-4 rounded-xl mb-6 font-bold text-sm flex items-center gap-3">
+				<%= CheckCircleIcon("w-5 h-5") %>
+				<span class="block"><c:out value="<%= jspMsg %>"/></span>
+			</div>
+			<% } %>
+
 			<%
 			if (editMode) {
 			%>
-			<form action="Profile" method="post" enctype="multipart/form-data"
-				id="profileForm">
-				<%
-				}
-				%>
+			<form action="Profile" method="post" enctype="multipart/form-data" id="profileForm">
+			<%
+			}
+			%>
 
 				<div class="profile-layout">
 					<div class="flex flex-col gap-4">
@@ -409,39 +381,34 @@ h2.title {
 								<%
 								if (editMode) {
 								%>
-								<div class="avatar-overlay"
-									onclick="document.getElementById('profilePicInput').click()">
+								<div class="avatar-overlay" onclick="document.getElementById('profilePicInput').click()">
 									<%=EditIcon("w-6 h-6 text-white")%>
 								</div>
-								<input type="file" name="profilePic" id="profilePicInput"
-									accept="image/*" hidden onchange="previewImage(this)">
+								<input type="file" name="profilePic" id="profilePicInput" accept="image/*" hidden onchange="previewImage(this)">
 								<%
 								}
 								%>
 							</div>
 
 							<div class="flex flex-col items-center gap-1 mt-0">
-								<span
-									class="text-[10px] font-black text-blue-600 uppercase tracking-widest"><%=userObj.getRole()%></span>
-								<span
-									class="px-2 py-0.5 rounded text-[9px] font-black uppercase <%="ACTIVE".equalsIgnoreCase(userObj.getStatus()) ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"%> border border-current">
+								<span class="text-[10px] font-black text-blue-600 uppercase tracking-widest"><%=userObj.getRole()%></span>
+								<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase <%="ACTIVE".equalsIgnoreCase(userObj.getStatus()) ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"%> border border-current">
 									<%=userObj.getStatus() != null ? userObj.getStatus() : "ACTIVE"%>
 								</span>
 							</div>
 
-							<div
-								class="w-full mt-6 pt-6 border-t border-slate-100 space-y-4 text-left">
+							<div class="w-full mt-6 pt-6 border-t border-slate-100 space-y-4 text-left">
 								<div>
-									<span class="label-xs" style="font-size: 11px;">Employment
-										ID</span><span class="val-text text-blue-600 font-bold"><%=displayEmpId%></span>
+									<span class="label-xs" style="font-size: 11px;">Employment ID</span>
+									<span class="val-text text-blue-600 font-bold"><%=displayEmpId%></span>
 								</div>
 								<div>
-									<span class="label-xs" style="font-size: 11px;">IC /
-										NRIC Number</span><span class="val-text"><%=displayIc%></span>
+									<span class="label-xs" style="font-size: 11px;">IC / NRIC Number</span>
+									<span class="val-text"><%=displayIc%></span>
 								</div>
 								<div>
-									<span class="label-xs" style="font-size: 11px;">Date of
-										Joining</span><span class="val-text"><%=displayHireDate%></span>
+									<span class="label-xs" style="font-size: 11px;">Date of Joining</span>
+									<span class="val-text"><%=displayHireDate%></span>
 								</div>
 							</div>
 						</div>
@@ -449,9 +416,7 @@ h2.title {
 
 					<div class="card">
 						<div class="px-8 py-3 border-b border-slate-50 bg-slate-50/30">
-							<span
-								class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Personal
-								Identification</span>
+							<span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Personal Identification</span>
 						</div>
 						<div class="p-8">
 							<%
@@ -460,8 +425,7 @@ h2.title {
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
 								<div class="md:col-span-2">
 									<span class="label-xs">Full Name</span>
-									<p
-										class="text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight"><%=userObj.getFullName()%></p>
+									<p class="text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight"><%=userObj.getFullName()%></p>
 								</div>
 								<div>
 									<span class="label-xs">Primary Email</span>
@@ -477,8 +441,7 @@ h2.title {
 								</div>
 								<div class="md:col-span-2">
 									<span class="label-xs">Residential Address</span>
-									<p class="val-text leading-relaxed text-slate-600"
-										style="font-weight: 500;"><%=combinedAddress%></p>
+									<p class="val-text leading-relaxed text-slate-600" style="font-weight: 500;"><%=combinedAddress%></p>
 								</div>
 							</div>
 							<%
@@ -486,99 +449,69 @@ h2.title {
 							%>
 							<div class="space-y-5">
 								<div class="space-y-1">
-									<span class="label-xs">Full Name</span><input
-										value="<%=userObj.getFullName()%>" class="read-only-box"
-										disabled>
+									<span class="label-xs">Full Name</span>
+									<input value="<%=userObj.getFullName()%>" class="read-only-box" disabled>
 								</div>
 								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div class="space-y-1">
-										<span class="label-xs">Email</span><input
-											value="<%=userObj.getEmail()%>" class="read-only-box"
-											disabled>
+										<span class="label-xs">Email</span>
+										<input value="<%=userObj.getEmail()%>" class="read-only-box" disabled>
 									</div>
 									<div class="space-y-1">
-										<span class="label-xs">Phone</span> <input name="phone"
-											id="phone" type="text"
-											value="<%=userObj.getPhone() != null ? userObj.getPhone() : ""%>"
-											placeholder="012-3456789">
+										<span class="label-xs">Phone</span> 
+										<input name="phone" id="phone" type="text" value="<%=userObj.getPhone() != null ? userObj.getPhone() : ""%>" placeholder="012-3456789">
                                         <span id="phoneHint" class="input-hint text-slate-400">FORMAT: 01X-XXXXXXX</span>
 									</div>
 								</div>
 								<div class="pt-4 border-t border-slate-100 space-y-4">
 									<div class="space-y-1">
-										<span class="label-xs">Street Name</span><input name="street"
-											type="text"
-											value="<%=userObj.getStreet() != null ? userObj.getStreet() : ""%>">
+										<span class="label-xs">Street Name</span>
+										<input name="street" type="text" value="<%=userObj.getStreet() != null ? userObj.getStreet() : ""%>">
 									</div>
 									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div class="space-y-1">
-											<span class="label-xs">City</span> <input name="city"
-												id="city" type="text"
-												value="<%=userObj.getCity() != null ? userObj.getCity() : ""%>"
-												pattern="^[A-Za-z\s]+$" title="CANNOT INCLUDE NUMBER.">
+											<span class="label-xs">City</span> 
+											<input name="city" id="city" type="text" value="<%=userObj.getCity() != null ? userObj.getCity() : ""%>" pattern="^[A-Za-z\s]+$" title="CANNOT INCLUDE NUMBER.">
 										</div>
 										<div class="space-y-1">
-											<span class="label-xs">Postal Code</span> <input
-												name="postalCode" id="postalCode" type="text"
-												value="<%=userObj.getPostalCode() != null ? userObj.getPostalCode() : ""%>"
-												maxlength="5">
+											<span class="label-xs">Postal Code</span> 
+											<input name="postalCode" id="postalCode" type="text" value="<%=userObj.getPostalCode() != null ? userObj.getPostalCode() : ""%>" maxlength="5">
                                             <span id="postalHint" class="input-hint text-slate-400">POSTALCODE 5 digit number</span>
 										</div>
 									</div>
 									<div class="space-y-1">
-										<span class="label-xs">State / Region</span> <select
-											name="state">
-											<option value="" disabled
-												<%=userObj.getState() == null ? "selected" : ""%>>SELECT
-												STATE</option>
+										<span class="label-xs">State / Region</span> 
+										<select name="state">
+											<option value="" disabled <%=userObj.getState() == null ? "selected" : ""%>>SELECT STATE</option>
 											<optgroup label="PENINSULAR MALAYSIA">
-												<option value="JOHOR"
-													<%="JOHOR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>JOHOR</option>
-												<option value="KEDAH"
-													<%="KEDAH".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KEDAH</option>
-												<option value="KELANTAN"
-													<%="KELANTAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KELANTAN</option>
-												<option value="MELAKA"
-													<%="MELAKA".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>MELAKA</option>
-												<option value="NEGERI SEMBILAN"
-													<%="NEGERI SEMBILAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>NEGERI
-													SEMBILAN</option>
-												<option value="PAHANG"
-													<%="PAHANG".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PAHANG</option>
-												<option value="PERAK"
-													<%="PERAK".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PERAK</option>
-												<option value="PERLIS"
-													<%="PERLIS".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PERLIS</option>
-												<option value="PENANG"
-													<%="PENANG".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PENANG</option>
-												<option value="SELANGOR"
-													<%="SELANGOR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SELANGOR</option>
-												<option value="TERENGGANU"
-													<%="TERENGGANU".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>TERENGGANU</option>
+												<option value="JOHOR" <%="JOHOR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>JOHOR</option>
+												<option value="KEDAH" <%="KEDAH".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KEDAH</option>
+												<option value="KELANTAN" <%="KELANTAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KELANTAN</option>
+												<option value="MELAKA" <%="MELAKA".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>MELAKA</option>
+												<option value="NEGERI SEMBILAN" <%="NEGERI SEMBILAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>NEGERI SEMBILAN</option>
+												<option value="PAHANG" <%="PAHANG".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PAHANG</option>
+												<option value="PERAK" <%="PERAK".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PERAK</option>
+												<option value="PERLIS" <%="PERLIS".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PERLIS</option>
+												<option value="PENANG" <%="PENANG".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PENANG</option>
+												<option value="SELANGOR" <%="SELANGOR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SELANGOR</option>
+												<option value="TERENGGANU" <%="TERENGGANU".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>TERENGGANU</option>
 											</optgroup>
 											<optgroup label="FEDERAL TERRITORIES">
-												<option value="KUALA LUMPUR"
-													<%="KUALA LUMPUR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KUALA
-													LUMPUR</option>
-												<option value="PUTRAJAYA"
-													<%="PUTRAJAYA".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PUTRAJAYA</option>
-												<option value="LABUAN"
-													<%="LABUAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>LABUAN</option>
+												<option value="KUALA LUMPUR" <%="KUALA LUMPUR".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>KUALA LUMPUR</option>
+												<option value="PUTRAJAYA" <%="PUTRAJAYA".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>PUTRAJAYA</option>
+												<option value="LABUAN" <%="LABUAN".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>LABUAN</option>
 											</optgroup>
 											<optgroup label="EAST MALAYSIA">
-												<option value="SABAH"
-													<%="SABAH".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SABAH</option>
-												<option value="SARAWAK"
-													<%="SARAWAK".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SARAWAK</option>
+												<option value="SABAH" <%="SABAH".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SABAH</option>
+												<option value="SARAWAK" <%="SARAWAK".equalsIgnoreCase(userObj.getState()) ? "selected" : ""%>>SARAWAK</option>
 											</optgroup>
 										</select>
 									</div>
 								</div>
-								<div
-									class="flex justify-end gap-3 pt-6 border-t border-slate-100">
+								<div class="flex justify-end gap-3 pt-6 border-t border-slate-100">
 									<a href="Profile" class="btn btn-ghost">Discard</a>
-									<button type="submit"
-										class="btn btn-blue shadow-lg shadow-blue-500/20"><%=SaveIcon("w-4 h-4")%>
+									<button type="submit" class="btn btn-blue shadow-lg shadow-blue-500/20">
+										<%=SaveIcon("w-4 h-4")%>
 										Save Changes
 									</button>
 								</div>
@@ -600,59 +533,28 @@ h2.title {
 	</main>
 
 	<script>
-    // 1. SUCCESS / ERROR TOAST HANDLER WITH AUTO DISAPPEAR & PARAMETER CLEANSING
-    window.addEventListener('load', () => {
-        // Read native JSP variables computed securely server-side
-        let msg = "<%= jspMsg.replace("\"", "\\\"").replace("\n", " ") %>".trim();
-        let error = "<%= jspError.replace("\"", "\\\"").replace("\n", " ") %>".trim();
-        
-        // Comprehensive fallback: inspect URL queries dynamically for both standard keys
-        if (!msg && !error) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rawMsg = urlParams.get('msg') || urlParams.get('message') || "";
-            if (rawMsg.toLowerCase() === 'success') {
-                msg = "Profile updated successfully!";
-            } else {
-                msg = rawMsg;
-            }
-            error = urlParams.get('error') || urlParams.get('err') || "";
-        }
-        
-        if (msg || error) {
-            const toast = document.getElementById('statusToast');
-            const toastMsg = document.getElementById('toastMessage');
-            const toastIcon = document.getElementById('toastIcon');
-            
-            if (msg) {
-                toast.className = 'toast-success';
-                toastMsg.textContent = msg.toUpperCase();
-                toastIcon.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>`;
-            } else {
-                toast.className = 'toast-error';
-                toastMsg.textContent = error.toUpperCase();
-                toastIcon.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
-            }
-            
-            // Pop up the toast smoothly
-            toast.classList.add('show');
-            
-            // Auto disappear timer: exactly 3 seconds (3000ms)
+    window.addEventListener('DOMContentLoaded', () => {
+        // Auto-dismiss alerts exactly after 3 seconds (3000ms) matching Holiday pattern
+        const alerts = document.querySelectorAll('.alert-box');
+        alerts.forEach(alert => {
             setTimeout(() => {
-                toast.classList.remove('show');
-                
-                // Clean browser address bar cleanly to prevent re-triggering upon reload
-                const url = new URL(window.location.href);
-                if (url.searchParams.has('msg') || url.searchParams.has('message') || url.searchParams.has('error')) {
-                    url.searchParams.delete('msg');
-                    url.searchParams.delete('message');
-                    url.searchParams.delete('error');
-                    window.history.replaceState({}, '', url.pathname + url.search);
-                }
+                alert.style.opacity = '0';
+                setTimeout(() => alert.style.display = 'none', 500);
             }, 3000);
-        }
+        });
+
+        // Scrub parameter references cleanly from address bar without reloading
+        setTimeout(() => {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has('msg') || url.searchParams.has('message') || url.searchParams.has('error')) {
+                url.searchParams.delete('msg');
+                url.searchParams.delete('message');
+                url.searchParams.delete('error');
+                window.history.replaceState({}, '', url.pathname + url.search);
+            }
+        }, 3500);
     });
 
-    // 2. INPUT FORMATTING (CAPS, PHONE, POSTAL)
     document.querySelectorAll('input').forEach(el => {
         el.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
@@ -666,7 +568,6 @@ h2.title {
                     this.value = val.substring(0, 3) + '-' + val.substring(3);
                 } else { this.value = val; }
 
-                // UI Clue logic
                 if (val.length > 0 && val.length < 10) {
                     hint.classList.replace('text-slate-400', 'text-red-500');
                 } else {
@@ -678,7 +579,6 @@ h2.title {
                 this.value = this.value.replace(/\D/g, '').slice(0, 5);
                 const hint = document.getElementById('postalHint');
 
-                // UI Clue logic: Show red if partially filled or incorrect
                 if (this.value.length > 0 && this.value.length < 5) {
                     hint.classList.replace('text-slate-400', 'text-red-500');
                 } else {
@@ -692,7 +592,6 @@ h2.title {
         });
     });
 
-    // 3. ON-BOX CONSTRAINTS (NO SYSTEM ALERTS)
     const form = document.getElementById('profileForm');
     if(form) {
         form.addEventListener('submit', function(e) {
@@ -702,11 +601,9 @@ h2.title {
             const phoneHint = document.getElementById('phoneHint');
             const postalHint = document.getElementById('postalHint');
 
-            // Reset classes
             phone.classList.remove('invalid-field');
             postal.classList.remove('invalid-field');
 
-            // Enforce validation only if Phone has value (as it is an optional field)
             const phoneVal = phone.value.replace(/-/g, '').trim();
             if (phoneVal.length > 0 && phoneVal.length < 10) {
                 phone.classList.add('invalid-field');
@@ -714,7 +611,6 @@ h2.title {
                 isValid = false;
             }
 
-            // Enforce validation only if Postal Code has value (as it is an optional field)
             const postalVal = postal.value.trim();
             if (postalVal.length > 0 && postalVal.length !== 5) {
                 postal.classList.add('invalid-field');

@@ -4,7 +4,7 @@
 <%
 if (session.getAttribute("empid") == null || session.getAttribute("role") == null
 		|| !"ADMIN".equalsIgnoreCase(String.valueOf(session.getAttribute("role")))) {
-	response.sendRedirect("login.jsp?error=Please login as admin.");
+	response.sendRedirect("login.jsp?error=Please+login+as+admin.");
 	return;
 }
 %>
@@ -16,9 +16,7 @@ if (session.getAttribute("empid") == null || session.getAttribute("role") == nul
 <title>Register Employee | Admin Access</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<link
-	href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-	rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -78,6 +76,7 @@ h2.title {
 	border-radius: var(--radius);
 	box-shadow: var(--shadow);
 	overflow: hidden;
+	transition: all 0.3s ease;
 }
 
 .cardHead {
@@ -157,6 +156,31 @@ input::placeholder {
 
 input[type="email"], input[type="password"] {
 	text-transform: none !important;
+}
+
+/* ERROR VISUAL STATES FOR INPUTS & SHAKE ANIMATION */
+input.invalid-field, select.invalid-field {
+	border-color: #ef4444 !important;
+	background-color: #fff1f2 !important;
+}
+
+.input-hint {
+	font-size: 10px;
+	font-weight: 850;
+	text-transform: uppercase;
+	margin-top: 4px;
+	display: block;
+	transition: color 0.2s;
+}
+
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	20%, 60% { transform: translateX(-6px); }
+	40%, 80% { transform: translateX(6px); }
+}
+
+.shake-it {
+	animation: shake 0.4s ease-in-out;
 }
 
 .actions {
@@ -279,6 +303,11 @@ input[type="email"], input[type="password"] {
                 </a>
 			</div>
 
+			<!-- Dynamic Client-side JavaScript Validation Error Notice Container -->
+			<div id="jsErrorAlert" class="bg-red-50 border border-red-100 p-4 rounded-xl text-red-700 font-bold mb-6 flex items-center gap-2 shadow-sm uppercase text-xs hidden">
+				<%=AlertIcon("w-5 h-5")%> <span id="jsErrorText"></span>
+			</div>
+
 			<c:if test="${not empty param.msg}">
 				<div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-emerald-700 font-bold mb-6 flex items-center gap-2 shadow-sm uppercase text-xs">
                     <%=CheckCircleIcon("w-5 h-5")%> ${param.msg}
@@ -301,25 +330,38 @@ input[type="email"], input[type="password"] {
 						<div class="grid-form">
 							<div class="field span2">
 								<label>Full Name as per IC *</label> 
-                                <%-- Constraint updated: allows only letters, spaces, and single quote --%>
-                                <input type="text" name="fullname" id="fullname" placeholder="e.g., AHMAD BIN ABDULLAH" 
-                                       required pattern="^[A-Za-z\s']+$" title="FULL NAME CAN ONLY CONTAIN LETTERS, SPACES, AND APOSTROPHES.">
+                                <input type="text" name="fullname" id="fullname" placeholder="AHMAD BIN ABDULLAH" 
+                                       required pattern="^[A-Za-z\s']+$" title="FULL NAME CAN ONLY CONTAIN LETTERS, SPACES, AND APOSTROPHES">
 							</div>
 
 							<div class="field">
 								<label>Work Email Address *</label> <input type="email"
-									name="email" placeholder="e.g., ahmad@klinik.com" required>
+									name="email" placeholder="ahmad@klinik.com" required>
+							</div>
+
+							<!-- System Password Field with Interactive Visibility Toggler -->
+							<div class="field">
+								<label>System Password *</label>
+								<div class="relative w-full">
+									<input type="password" name="password" id="password" placeholder="••••••••" required class="pr-12">
+									<button type="button" onclick="togglePasswordVisibility()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors" title="Toggle visibility">
+										<!-- Open Eye Icon -->
+										<svg id="eyeOpenIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+										</svg>
+										<!-- Slashed Closed Eye Icon (Initially Hidden) -->
+										<svg id="eyeCloseIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+										</svg>
+									</button>
+								</div>
 							</div>
 
 							<div class="field">
-								<label>System Password *</label> <input type="password"
-									name="password" placeholder="••••••••" required>
-							</div>
-
-							<div class="field">
-								<label>IC Number *</label> <input type="text" name="icNumber"
-									id="icNumber" placeholder="900101-04-5566" maxlength="14"
-									required>
+								<label>IC Number *</label> 
+								<input type="text" name="icNumber" id="icNumber" placeholder="900101-04-5566" maxlength="14" required>
+								<span id="icHint" class="input-hint text-red-500 font-bold hidden">PLEASE FILL OUT THIS FIELD WITH IC NUMBER (EXACTLY 12 DIGITS)</span>
 							</div>
 
 							<div class="field">
@@ -347,16 +389,15 @@ input[type="email"], input[type="password"] {
 
 							<div class="field">
 								<label>City *</label> 
-                                <%-- Constraint updated: allows only letters and spaces --%>
                                 <input type="text" name="city" id="city"
 									placeholder="JASIN" required pattern="^[A-Za-z\s]+$"
 									title="CITY CAN ONLY CONTAIN LETTERS AND SPACES.">
 							</div>
 
 							<div class="field">
-								<label>Postal Code *</label> <input type="text"
-									name="postalCode" id="postalCode" placeholder="77300"
-									maxlength="5" required>
+								<label>Postal Code *</label> 
+								<input type="text" name="postalCode" id="postalCode" placeholder="77300" maxlength="5" required>
+								<span id="postalHint" class="input-hint text-red-500 font-bold hidden">PLEASE FILL OUT THIS FIELD WITH POSTAL CODE (EXACTLY 5 DIGITS)</span>
 							</div>
 
 							<div class="field span2">
@@ -397,6 +438,7 @@ input[type="email"], input[type="password"] {
 		</div>
 	</main>
 
+	<!-- Confirmation overlay dialog module -->
 	<div id="confirmOverlay" class="confirm-overlay">
 		<div class="confirm-modal">
 			<div class="confirm-body">
@@ -417,19 +459,39 @@ input[type="email"], input[type="password"] {
 	</div>
 
 	<script>
+		// 1. Password Visibility Handler toggler routine
+		function togglePasswordVisibility() {
+			const passwordInput = document.getElementById('password');
+			const eyeOpenIcon = document.getElementById('eyeOpenIcon');
+			const eyeCloseIcon = document.getElementById('eyeCloseIcon');
+
+			if (passwordInput.type === 'password') {
+				passwordInput.type = 'text';
+				eyeOpenIcon.classList.add('hidden');
+				eyeCloseIcon.classList.remove('hidden');
+			} else {
+				passwordInput.type = 'password';
+				eyeOpenIcon.classList.remove('hidden');
+				eyeCloseIcon.classList.add('hidden');
+			}
+		}
+
+		// 2. Real-time form listeners and formatting rules
         document.querySelectorAll('input, select').forEach(el => {
             el.addEventListener('input', function() {
-                // Auto Uppercase
+                // Auto Uppercase for text input fields (excluding sensitive system entries)
                 if (this.tagName === 'INPUT' && this.type !== 'password' && this.type !== 'email') {
                     this.value = this.value.toUpperCase();
                 }
+
+                this.classList.remove('invalid-field');
 
                 // Constraint: Full Name (Only letters, spaces, and apostrophe allowed)
                 if (this.id === 'fullname') {
                     this.value = this.value.replace(/[^A-Za-z\s']/g, '');
                 }
 
-                // Format IC
+                // Format IC input dynamically and handle hidden descriptive cues
                 if (this.id === 'icNumber') {
                     let val = this.value.replace(/\D/g, '');
                     if (val.length > 12) val = val.slice(0, 12);
@@ -438,9 +500,19 @@ input[type="email"], input[type="password"] {
                     if (val.length > 6) formatted += '-' + val.substring(6, 8);
                     if (val.length > 8) formatted += '-' + val.substring(8);
                     this.value = formatted;
+
+                    // Update hint style dynamically (hidden by default, shown on incomplete entries)
+                    const hint = document.getElementById('icHint');
+                    if (val.length > 0 && val.length < 12) {
+                        hint.classList.remove('hidden');
+                        this.classList.add('invalid-field');
+                    } else {
+                        hint.classList.add('hidden');
+                        this.classList.remove('invalid-field');
+                    }
                 }
 
-                // Format Phone
+                // Format Mobile Contact
                 if (this.id === 'phoneNo') {
                     let val = this.value.replace(/\D/g, '');
                     if (val.length > 11) val = val.slice(0, 11);
@@ -451,21 +523,84 @@ input[type="email"], input[type="password"] {
                     }
                 }
                 
-                // City Constraint (Only letters and spaces allowed)
+                // City Validation Constraint (No special symbols or numbers)
                 if (this.id === 'city') {
                     this.value = this.value.replace(/[^A-Za-z\s]/g, '');
                 }
 
+                // Postal code digits restrictions
                 if (this.id === 'postalCode') {
                     this.value = this.value.replace(/\D/g, '').slice(0, 5);
+
+                    // Sync helper cue indicators
+                    const hint = document.getElementById('postalHint');
+                    if (this.value.length > 0 && this.value.length < 5) {
+                        hint.classList.remove('hidden');
+                        this.classList.add('invalid-field');
+                    } else {
+                        hint.classList.add('hidden');
+                        this.classList.remove('invalid-field');
+                    }
                 }
             });
         });
 
+        // 3. Client-side submit constraints validation
         function showConfirmModal(event) {
             event.preventDefault();
-            const nameInput = document.getElementById('fullname');
-            const name = nameInput ? nameInput.value.trim() : "THIS USER";
+
+            const fullname = document.getElementById('fullname');
+            const icInput = document.getElementById('icNumber');
+            const postalInput = document.getElementById('postalCode');
+            const alertBox = document.getElementById('jsErrorAlert');
+            const alertText = document.getElementById('jsErrorText');
+            const card = document.querySelector('.card');
+
+            const icHint = document.getElementById('icHint');
+            const postalHint = document.getElementById('postalHint');
+
+            let isValid = true;
+            let errorMessage = "";
+
+            // Reset field states
+            icInput.classList.remove('invalid-field');
+            postalInput.classList.remove('invalid-field');
+            alertBox.classList.add('hidden');
+
+            // 1. Strict IC digits check
+            const rawIc = icInput.value.replace(/-/g, '').trim();
+            if (rawIc.length !== 12) {
+                isValid = false;
+                icInput.classList.add('invalid-field');
+                icHint.classList.remove('hidden');
+                errorMessage = "IC number must contain exactly 12 digits!";
+            }
+
+            // 2. Strict Postal Code digits check
+            const rawPostal = postalInput.value.trim();
+            if (rawPostal.length !== 5) {
+                isValid = false;
+                postalInput.classList.add('invalid-field');
+                postalHint.classList.remove('hidden');
+                errorMessage = errorMessage ? errorMessage + " & postal code must contain exactly 5 digits!" : "Postal code must contain exactly 5 digits!";
+            }
+
+            if (!isValid) {
+                // Show standard customized alert notice block (no browser alerts used)
+                alertText.textContent = errorMessage.toUpperCase();
+                alertBox.classList.remove('hidden');
+
+                // Trigger card shake animation
+                card.classList.remove('shake-it');
+                card.offsetHeight; // force reflow
+                card.classList.add('shake-it');
+
+                // Scroll smoothly to alert box
+                alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+
+            const name = fullname ? fullname.value.trim() : "THIS USER";
             document.getElementById('confirmNameText').textContent = name.toUpperCase();
             document.getElementById('confirmOverlay').classList.add('show');
             return false;
@@ -483,6 +618,6 @@ input[type="email"], input[type="password"] {
             }
             document.getElementById('registrationForm').submit();
         }
-    </script>
+	</script>
 </body>
 </html>
